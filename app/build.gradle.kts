@@ -60,7 +60,14 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-
     // 如果你使用 KSP（推荐现代 Compose 项目）
-    ksp(libs.room.compiler.ksp)
+
+    implementation(libs.room.runtime)
+    ksp(libs.room.compiler)
+
+    implementation(libs.compose.material3)
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
+    implementation(libs.accompanist.permissions)
 }
