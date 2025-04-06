@@ -61,8 +61,13 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     // 如果你使用 KSP（推荐现代 Compose 项目）
-    implementation("androidx.compose.material3:material3:1.2.1")
-    implementation("com.google.maps.android:maps-compose:6.5.2")
-    implementation("androidx.room:room-runtime:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
+
+    implementation(libs.room.runtime)
+    ksp(libs.room.compiler)
+
+    implementation(libs.compose.material3)
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
+    implementation(libs.accompanist.permissions)
 }

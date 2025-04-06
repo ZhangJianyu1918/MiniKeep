@@ -32,7 +32,7 @@ fun HomeScreen(navController: NavController, drawerState: DrawerState) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Health & Fitness") },
+                title = { Text("Home") },
                 navigationIcon = {
                     IconButton(onClick = {
                         coroutineScope.launch {
