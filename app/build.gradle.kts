@@ -60,7 +60,9 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-
     // 如果你使用 KSP（推荐现代 Compose 项目）
-    ksp(libs.room.compiler.ksp)
+    implementation("androidx.compose.material3:material3:1.2.1")
+    implementation("com.google.maps.android:maps-compose:6.5.2")
+    implementation("androidx.room:room-runtime:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
 }
