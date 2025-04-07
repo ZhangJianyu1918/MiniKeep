@@ -51,12 +51,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MiniKeepTheme {
-//                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-//                    Greeting(
-//                        name = "Android",
-//                        modifier = Modifier.padding(innerPadding)
-//                    )
-//                }
                 Surface(modifier = Modifier.fillMaxSize()) {
                     MiniKeepNavigation()
                 }
