@@ -47,9 +47,9 @@ fun HomeScreen(navController: NavController, drawerState: DrawerState) {
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = primaryLight,
-                    titleContentColor = onPrimaryLight,
-                    navigationIconContentColor = onPrimaryLight
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
         },
@@ -63,7 +63,6 @@ fun HomeScreen(navController: NavController, drawerState: DrawerState) {
         ) {
             // 欢迎区域
             WelcomeSection(userName = "User") // 可替换为动态用户名
-            Log.d("ThemeDebug", "Primary color: ${MaterialTheme.colorScheme.primary}")
 
             // 每日概览卡片
             DailyOverviewCard(
@@ -72,15 +71,7 @@ fun HomeScreen(navController: NavController, drawerState: DrawerState) {
                 onClick = { navController.navigate("profile") }
             )
 
-            // 快速操作区域
-            QuickActionsSection(
-                actions = listOf(
-                    QuickAction("Log Activity", "form", R.drawable.ic_launcher_background),
-                    QuickAction("View Map", "map", R.drawable.ic_launcher_background),
-                    QuickAction("Check Calendar", "calendar", R.drawable.ic_launcher_background)
-                ),
-                navController = navController
-            )
+
         }
     }
 }
