@@ -1,5 +1,6 @@
 package com.example.minikeep.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -10,8 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -46,7 +49,7 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Welcome", style = MaterialTheme.typography.titleLarge) },
+                title = { Text("Login", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = {
                         coroutineScope.launch { drawerState.open() }
@@ -108,15 +111,25 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState) {
                         onClick = { /* 登录逻辑 */ },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+
                     ) {
                         Text("Login")
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    TextButton(
+                    Button (
                         onClick = { /* 注册逻辑 */ },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     ) {
                         Text("Register")
                     }
@@ -124,10 +137,14 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState) {
                     OutlinedButton(
                         onClick = { /* Google 登录逻辑 */ },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.large
+                        shape = MaterialTheme.shapes.large,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
                     ) {
                         Icon(
-                            painter = rememberVectorPainter(Icons.Default.Menu),
+                            painter = rememberVectorPainter(Icons.Filled.Email),
                             contentDescription = null,
                             modifier = Modifier.size(20.dp)
                         )
