@@ -1,9 +1,11 @@
 package com.example.minikeep
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -16,15 +18,18 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
+//import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
-import androidx.compose.material3.Scaffold
+//import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+//import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,12 +51,16 @@ import com.example.minikeep.ui.theme.MiniKeepTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MiniKeepTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+            MiniKeepTheme(dynamicColor = false) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
                     MiniKeepNavigation()
                 }
             }
@@ -75,6 +84,7 @@ fun GreetingPreview() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MiniKeepNavigation() {
     val navigationController = rememberNavController()
@@ -126,16 +136,19 @@ fun DrawerContent(
     menus: List<MenuItem>,
     onMenuClick: (String) -> Unit
 ) {
-    ModalDrawerSheet {
-        Spacer(modifier = Modifier.height(16.dp))
-        menus.forEach { menu ->
-            NavigationDrawerItem(
-                icon = { menu.icon?.let { Icon(it, contentDescription = null) } },
-                label = { Text(menu.title) },
-                selected = false, // 可以动态设置选中状态
-                onClick = { onMenuClick(menu.route) },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+    Spacer(modifier = Modifier.height(16.dp))
+    menus.forEach { menu ->
+        NavigationDrawerItem(
+            icon = { menu.icon?.let { Icon(it, contentDescription = null) } },
+            label = { Text(menu.title) },
+            selected = false, // 可以根据当前 route 动态设置
+            onClick = { onMenuClick(menu.route) },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+            colors = NavigationDrawerItemDefaults.colors(
+                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                selectedTextColor = MaterialTheme.colorScheme.onPrimary,
+                selectedIconColor = MaterialTheme.colorScheme.onPrimary
             )
-        }
+        )
     }
 }

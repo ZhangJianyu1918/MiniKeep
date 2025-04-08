@@ -15,6 +15,7 @@ room = "2.6.1"
 play-services-maps = "19.0.0"
 play-services-location = "21.3.0"
 accompanist-permissions = "0.30.1"
+uiTextGoogleFonts = "1.7.8"
 
 
 [libraries]
@@ -46,6 +47,7 @@ maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = 
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "play-services-maps" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist-permissions" }
+androidx-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version.ref = "uiTextGoogleFonts" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
