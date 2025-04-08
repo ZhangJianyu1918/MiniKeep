@@ -5,6 +5,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,7 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DrawerState
@@ -56,142 +60,180 @@ import java.util.Locale
 @Composable
 fun FormScreen(navController: NavController, drawerState: DrawerState) {
     val calendar = Calendar.getInstance()
-    var date by remember { mutableStateOf("") }
     val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val coroutineScope = rememberCoroutineScope()
+
+    var date by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
-    var datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = Instant.now().toEpochMilli()
-    )
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = Instant.now().toEpochMilli())
     var selectedDate by remember { mutableStateOf(calendar.timeInMillis) }
 
-    // Mutable state for height, weight, and gender
     var height by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
     var gender by remember { mutableStateOf("") }
+    var fitnessGoal by remember { mutableStateOf("") }
 
-    // State for gender dropdown menu expansion
-    var genderExpanded by remember { mutableStateOf(false) }
     val genderOptions = listOf("Male", "Female")
+    val fitnessGoalOptions = listOf("Weight Loss", "Muscle Gain", "General Fitness", "Endurance")
+
+    var genderExpanded by remember { mutableStateOf(false) }
+    var fitnessGoalExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Form") },
+                title = { Text("Personal Info", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = {
-                        coroutineScope.launch {
-                            drawerState.open()
-                        }
+                        coroutineScope.launch { drawerState.open() }
                     }) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")
                     }
                 }
             )
         }
-    ) { paddingValues ->
+    ) { padding ->
         Column(
-            modifier = Modifier.padding(paddingValues).fillMaxWidth(),
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Height input
-            OutlinedTextField(
-                value = height,
-                onValueChange = { height = it },
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                label = { Text("Height") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-
-            // Weight input
-            OutlinedTextField(
-                value = weight,
-                onValueChange = { weight = it },
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                label = { Text("Weight") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-
-            // Date input with clickable trigger for date picker
-            TextField(
-                value = date,
-                onValueChange = {},
-                readOnly = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showDatePicker = true }
-                    .padding(16.dp),
-                label = { Text("Date") },
-                trailingIcon = {
-                    Icon(
-                        painter = painterResource(id = com.example.minikeep.R.drawable.ic_launcher_background),
-                        contentDescription = "Select Date",
-                        modifier = Modifier.clickable { showDatePicker = true }.size(40.dp)
-                    )
-                }
-            )
-
-            // Date Picker Dialog
-            if (showDatePicker) {
-                DatePickerDialog(
-                    onDismissRequest = {
-                        showDatePicker = false
-                    },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            showDatePicker = false
-                            selectedDate = datePickerState.selectedDateMillis!!
-                            date = "DoB: ${formatter.format(Date(selectedDate))}"
-                        }) {
-                            Text("Ok")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = {
-                            showDatePicker = false
-                        }) {
-                            Text("Cancel")
-                        }
-                    }
-                ) {
-                    DatePicker(
-                        state = datePickerState
-                    )
-                }
-            }
-
-            // Gender dropdown menu
-            ExposedDropdownMenuBox(
-                expanded = genderExpanded,
-                onExpandedChange = { genderExpanded = !genderExpanded }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
+                elevation = CardDefaults.cardElevation(8.dp)
             ) {
-                OutlinedTextField(
-                    value = gender,
-                    onValueChange = {},
-                    label = { Text("Gender") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
-                        .padding(16.dp),
-                    readOnly = true,
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded)
-                    }
-                )
-                ExposedDropdownMenu(
-                    expanded = genderExpanded,
-                    onDismissRequest = { genderExpanded = false }
-                ) {
-                    genderOptions.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option) },
-                            onClick = {
-                                gender = option
-                                genderExpanded = false
+                Column(modifier = Modifier.padding(16.dp)) {
+                    OutlinedTextField(
+                        value = height,
+                        onValueChange = { height = it },
+                        label = { Text("Height (cm)") },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                    )
+
+                    OutlinedTextField(
+                        value = weight,
+                        onValueChange = { weight = it },
+                        label = { Text("Weight (kg)") },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                    )
+
+                    // 日期选择
+                    OutlinedTextField(
+                        value = date,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Date of Birth") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .clickable { showDatePicker = true },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = "Select Date",
+                                modifier = Modifier.clickable { showDatePicker = true }
+                            )
+                        }
+                    )
+
+                    if (showDatePicker) {
+                        DatePickerDialog(
+                            onDismissRequest = { showDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showDatePicker = false
+                                    selectedDate = datePickerState.selectedDateMillis!!
+                                    date = formatter.format(Date(selectedDate))
+                                }) { Text("OK") }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
                             }
-                        )
+                        ) {
+                            DatePicker(state = datePickerState)
+                        }
                     }
+
+                    // 下拉菜单：并排显示
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // 性别
+                        ExposedDropdownMenuBox(
+                            expanded = genderExpanded,
+                            onExpandedChange = { genderExpanded = !genderExpanded },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            OutlinedTextField(
+                                value = gender,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Gender") },
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded)
+                                },
+                                modifier = Modifier.menuAnchor()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = genderExpanded,
+                                onDismissRequest = { genderExpanded = false }
+                            ) {
+                                genderOptions.forEach {
+                                    DropdownMenuItem(
+                                        text = { Text(it) },
+                                        onClick = {
+                                            gender = it
+                                            genderExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        // 健身目标
+                        ExposedDropdownMenuBox(
+                            expanded = fitnessGoalExpanded,
+                            onExpandedChange = { fitnessGoalExpanded = !fitnessGoalExpanded },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            OutlinedTextField(
+                                value = fitnessGoal,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Goal") },
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = fitnessGoalExpanded)
+                                },
+                                modifier = Modifier.menuAnchor()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = fitnessGoalExpanded,
+                                onDismissRequest = { fitnessGoalExpanded = false }
+                            ) {
+                                fitnessGoalOptions.forEach {
+                                    DropdownMenuItem(
+                                        text = { Text(it) },
+                                        onClick = {
+                                            fitnessGoal = it
+                                            fitnessGoalExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // 你可以在这里添加一个保存按钮或继续导航的按钮
                 }
             }
         }
     }
 }
+
