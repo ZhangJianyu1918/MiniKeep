@@ -54,10 +54,10 @@ fun MapScreen(navController: NavController, drawerState: DrawerState) {
     val coroutineScope = rememberCoroutineScope()
 
     val context = LocalContext.current
-    val locationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+//    val locationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
     // 位置状态
-    var userLocation by remember { mutableStateOf<LatLng?>(null) }
+//    var userLocation by remember { mutableStateOf<LatLng?>(null) }
 
 
 
@@ -65,19 +65,19 @@ fun MapScreen(navController: NavController, drawerState: DrawerState) {
     val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
 
     // 获取用户位置
-    LaunchedEffect(locationPermissionState.status.isGranted) {
-        if (locationPermissionState.status.isGranted) {
-            try {
-                locationClient.lastLocation.addOnSuccessListener { location ->
-                    location?.let {
-                        userLocation = LatLng(it.latitude, it.longitude)
-                    }
-                }
-            } catch (e: SecurityException) {
-                // 处理权限异常
-            }
-        }
-    }
+//    LaunchedEffect(locationPermissionState.status.isGranted) {
+//        if (locationPermissionState.status.isGranted) {
+//            try {
+//                locationClient.lastLocation.addOnSuccessListener { location ->
+//                    location?.let {
+//                        userLocation = LatLng(it.latitude, it.longitude)
+//                    }
+//                }
+//            } catch (e: SecurityException) {
+//                // 处理权限异常
+//            }
+//        }
+//    }
     // 初始化 CameraPositionState
     val defaultLocation = LatLng(-37.8136, -144.9631) // 替换为你的城市坐标
     val cameraPositionState = rememberCameraPositionState {
@@ -85,13 +85,17 @@ fun MapScreen(navController: NavController, drawerState: DrawerState) {
     }
 
     // 监听 userLocation，自动调整地图视角
-    LaunchedEffect(userLocation) {
-        userLocation?.let {
-            // 使用 CameraUpdateFactory 更新相机位置
-            val cameraUpdate = CameraUpdateFactory.newLatLngZoom(it, 15f)
-            cameraPositionState.animate(cameraUpdate, durationMs = 1000)
-        }
-    }
+//    LaunchedEffect(userLocation) {
+//        if (userLocation != null) {
+//            val cameraUpdate = CameraUpdateFactory.newLatLngZoom(userLocation!!, 15f)
+//            cameraPositionState.animate(cameraUpdate, durationMs = 1000)
+//        } else {
+//            // 用户位置为空时，手动设置到墨尔本
+//            val melbourneUpdate = CameraUpdateFactory.newLatLngZoom(defaultLocation, 14f)
+//            cameraPositionState.animate(melbourneUpdate, durationMs = 1000)
+//        }
+//    }
+
     // 默认位置（例如某个健身公园）
 
 
@@ -137,10 +141,12 @@ fun MapScreen(navController: NavController, drawerState: DrawerState) {
                 cameraPositionState = cameraPositionState,
                 uiSettings = MapUiSettings(
                     zoomControlsEnabled = true,
-                    myLocationButtonEnabled = locationPermissionState.status.isGranted
+//                    myLocationButtonEnabled = locationPermissionState.status.isGranted
+                    myLocationButtonEnabled = false
                 ),
                 properties = MapProperties(
-                    isMyLocationEnabled = locationPermissionState.status.isGranted
+//                    isMyLocationEnabled = locationPermissionState.status.isGranted
+                    isMyLocationEnabled = false
                 )
             ) {
                 // 添加健身地点标记
