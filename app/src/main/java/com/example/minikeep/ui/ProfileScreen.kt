@@ -59,7 +59,7 @@ fun ProfileScreen(navController: NavController, drawerState: DrawerState) {
             horizontalAlignment = Alignment.CenterHorizontally,
 
         ) {
-            Text(text = "Welcome to Profile!", style = MaterialTheme.typography.headlineMedium)
+
         }
     }
 }

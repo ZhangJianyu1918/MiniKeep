@@ -1,5 +1,7 @@
 package com.example.minikeep
 
+import android.annotation.SuppressLint
+import android.media.metrics.Event
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -32,7 +34,11 @@ import androidx.compose.material3.Text
 //import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
@@ -84,13 +90,14 @@ fun GreetingPreview() {
     }
 }
 
+@SuppressLint("UnrememberedMutableState")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MiniKeepNavigation() {
     val navigationController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-
+    val events by mutableStateOf<List<com.google.api.services.calendar.model.Event>>(emptyList())
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
