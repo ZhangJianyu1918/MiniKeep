@@ -38,7 +38,15 @@ android {
     buildFeatures {
         compose = true
     }
+
+    packagingOptions {
+        resources {
+            excludes += "META-INF/DEPENDENCIES"
+        }
+    }
 }
+
+
 
 dependencies {
 
@@ -71,4 +79,11 @@ dependencies {
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
     implementation(libs.accompanist.permissions)
+
+
+    // Google Calendar API
+    implementation(libs.google.api.client)
+    implementation(libs.google.oauth.client.jetty)
+    implementation(libs.google.api.services.calendar)
+    implementation(libs.play.services.auth)
 }
