@@ -59,11 +59,9 @@ fun HomeScreen(navController: NavController, drawerState: DrawerState) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-//                .background()
         ) {
             // 欢迎区域
-            WelcomeSection(userName = "User") // 可替换为动态用户名
-
+//            WelcomeSection(userName = "User")
             // 每日概览卡片
             DailyOverviewCard(
                 steps = 7500,
@@ -71,52 +69,11 @@ fun HomeScreen(navController: NavController, drawerState: DrawerState) {
                 onClick = { navController.navigate("profile") }
             )
 
-
+            FormResultCard()
         }
     }
 }
 
-// 欢迎区域
-@Composable
-fun WelcomeSection(userName: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = userName.first().toString().uppercase(),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column {
-            Text(
-                text = "Hi, $userName!",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = "Let's stay healthy today!",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
 
 // 每日概览卡片
 @Composable
