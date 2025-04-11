@@ -1,36 +1,19 @@
 package com.example.minikeep.ui
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import android.Manifest
-import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -40,67 +23,19 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.launch
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import com.google.android.gms.maps.CameraUpdateFactory
 
-@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(navController: NavController, drawerState: DrawerState) {
     val coroutineScope = rememberCoroutineScope()
 
-    val context = LocalContext.current
-//    val locationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
-
-    // 位置状态
-//    var userLocation by remember { mutableStateOf<LatLng?>(null) }
-
-
-
-    // 位置权限
-    val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
-
-    // 获取用户位置
-//    LaunchedEffect(locationPermissionState.status.isGranted) {
-//        if (locationPermissionState.status.isGranted) {
-//            try {
-//                locationClient.lastLocation.addOnSuccessListener { location ->
-//                    location?.let {
-//                        userLocation = LatLng(it.latitude, it.longitude)
-//                    }
-//                }
-//            } catch (e: SecurityException) {
-//                // 处理权限异常
-//            }
-//        }
-//    }
-    // 初始化 CameraPositionState
-    val defaultLocation = LatLng(-37.8136, -144.9631) // 替换为你的城市坐标
+    // Set the default location to Melbourne
+    val melbourneLocation = LatLng(-37.8136, 144.9631) // Melbourne coordinates
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(defaultLocation, 14f)
+        position = CameraPosition.fromLatLngZoom(melbourneLocation, 14f) // Fixed zoom level for Melbourne
     }
 
-    // 监听 userLocation，自动调整地图视角
-//    LaunchedEffect(userLocation) {
-//        if (userLocation != null) {
-//            val cameraUpdate = CameraUpdateFactory.newLatLngZoom(userLocation!!, 15f)
-//            cameraPositionState.animate(cameraUpdate, durationMs = 1000)
-//        } else {
-//            // 用户位置为空时，手动设置到墨尔本
-//            val melbourneUpdate = CameraUpdateFactory.newLatLngZoom(defaultLocation, 14f)
-//            cameraPositionState.animate(melbourneUpdate, durationMs = 1000)
-//        }
-//    }
-
-    // 默认位置（例如某个健身公园）
-
-
-    // 健身相关标记（例如健身房、公园）
+    // Predefined fitness locations in Melbourne
     val fitnessLocations = listOf(
         FitnessLocation("Fitness First Melbourne Central", LatLng(-37.8116, 144.9625), "Fully equipped city centre gym"),
         FitnessLocation("F45 Training Southbank", LatLng(-37.8230, 144.9587), "High-intensity team training courses"),
@@ -109,68 +44,53 @@ fun MapScreen(navController: NavController, drawerState: DrawerState) {
         FitnessLocation("Princes Park", LatLng(-37.7834, 144.9582), "Spacious green space and fitness trails")
     )
 
-
     Scaffold(
         topBar = {
             MiniKeepTopBar(
-                "Map",
+                title = "Map",
                 drawerState = drawerState,
                 coroutineScope = coroutineScope,
                 modifier = Modifier
             )
         },
-        modifier = Modifier.systemBarsPadding(),
+        modifier = Modifier.systemBarsPadding()
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // 显示地图
+            // Display the map centered on Melbourne
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
                 uiSettings = MapUiSettings(
                     zoomControlsEnabled = true,
-//                    myLocationButtonEnabled = locationPermissionState.status.isGranted
-                    myLocationButtonEnabled = false
+                    myLocationButtonEnabled = false // Disable location button
                 ),
                 properties = MapProperties(
-//                    isMyLocationEnabled = locationPermissionState.status.isGranted
-                    isMyLocationEnabled = false
+                    isMyLocationEnabled = false // Disable user location
                 )
             ) {
-                // 添加健身地点标记
+                // Add markers for fitness locations in Melbourne
                 fitnessLocations.forEach { location ->
                     Marker(
                         state = MarkerState(position = location.position),
                         title = location.name,
                         snippet = location.description,
                         onClick = {
-                            // 可选：点击标记跳转到健身详情页面
-                            navController.navigate("form") // 替换为实际路由
+                            // Navigate to a form screen when a marker is clicked
+                            navController.navigate("form")
                             true
                         }
                     )
-                }
-            }
-
-            // 权限提示
-            if (!locationPermissionState.status.isGranted) {
-                Button(
-                    onClick = { locationPermissionState.launchPermissionRequest() },
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(16.dp)
-                ) {
-                    Text("Enable Location Permission")
                 }
             }
         }
     }
 }
 
-// 数据类用于存储健身地点信息
+// Data class for fitness locations
 data class FitnessLocation(
     val name: String,
     val position: LatLng,
