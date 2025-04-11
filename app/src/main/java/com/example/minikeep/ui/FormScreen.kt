@@ -6,11 +6,13 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -79,6 +81,9 @@ fun FormScreen(navController: NavController, drawerState: DrawerState) {
     var genderExpanded by remember { mutableStateOf(false) }
     var fitnessGoalExpanded by remember { mutableStateOf(false) }
 
+    val isHeightValid = height.isNotEmpty() && (height.toIntOrNull() !in 30..300)
+    val isWeightValid = weight.isNotEmpty() && (weight.toIntOrNull() !in 30..300)
+
     Scaffold(
         topBar = {
             MiniKeepTopBar(
@@ -104,8 +109,17 @@ fun FormScreen(navController: NavController, drawerState: DrawerState) {
                     onValueChange = { height = it },
                     label = { Text("Height (cm)") },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                    isError = isHeightValid
                 )
+                if (isHeightValid) {
+                    Text(
+                        text = "Height must be between 30 and 300 cm",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    )
+                }
             }
             item {
                 OutlinedTextField(
@@ -113,8 +127,17 @@ fun FormScreen(navController: NavController, drawerState: DrawerState) {
                     onValueChange = { weight = it },
                     label = { Text("Weight (kg)") },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                    isError = isHeightValid
                 )
+                if (isWeightValid) {
+                    Text(
+                        text = "Weight must be between 30 and 300 kg",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    )
+                }
             }
             item {
                 OutlinedTextField(
@@ -198,7 +221,7 @@ fun FormScreen(navController: NavController, drawerState: DrawerState) {
                         value = fitnessGoal,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Goal") },
+                        label = { Text("Fitness Goal") },
                         trailingIcon = {
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = fitnessGoalExpanded)
                         },
@@ -222,14 +245,16 @@ fun FormScreen(navController: NavController, drawerState: DrawerState) {
                 }
             }
             item {
-                FormResultCard()
-            }
-            item {
                 Button(
-                    onClick = ({})
+                    onClick = ({}),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp)
                 ) {
                     Text("Submit")
                 }
+            }
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+//                FormResultCard()
             }
         }
     }
@@ -263,6 +288,10 @@ fun FormResultCard() {
             )
             Text(
                 text = "Your Best BMI Range is: [20, 25]",
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = "Your Body Fat Percentage: 22",
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
