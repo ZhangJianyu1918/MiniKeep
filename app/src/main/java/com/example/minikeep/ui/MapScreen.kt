@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import android.Manifest
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -111,24 +112,14 @@ fun MapScreen(navController: NavController, drawerState: DrawerState) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Map") },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        coroutineScope.launch {
-                            drawerState.open()
-                        }
-                    }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Open Drawer")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+            MiniKeepTopBar(
+                "Map",
+                drawerState = drawerState,
+                coroutineScope = coroutineScope,
+                modifier = Modifier
             )
-        }
+        },
+        modifier = Modifier.systemBarsPadding(),
     ) { padding ->
         Box(
             modifier = Modifier

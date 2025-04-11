@@ -40,7 +40,6 @@ data class MockEvent(
 )
 
 @RequiresApi(Build.VERSION_CODES.O)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
     val coroutineScope = rememberCoroutineScope()
@@ -64,22 +63,14 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Google Calendar", style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        coroutineScope.launch { drawerState.open() }
-                    }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+            MiniKeepTopBar(
+                "Calendar",
+                drawerState = drawerState,
+                coroutineScope = coroutineScope,
+                modifier = Modifier
             )
         },
+        modifier = Modifier.systemBarsPadding(),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
