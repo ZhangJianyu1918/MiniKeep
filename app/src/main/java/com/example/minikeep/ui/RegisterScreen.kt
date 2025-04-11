@@ -22,6 +22,7 @@ fun RegisterScreen(navController: NavController, drawerState: DrawerState) {
     val coroutineScope = rememberCoroutineScope()
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -42,8 +43,7 @@ fun RegisterScreen(navController: NavController, drawerState: DrawerState) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 登录卡片
-            androidx.compose.material3.Card(
+            Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.extraLarge,
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
@@ -76,7 +76,14 @@ fun RegisterScreen(navController: NavController, drawerState: DrawerState) {
                         onValueChange = { password = it },
                         label = { Text("Password") },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.large
+                        shape = MaterialTheme.shapes.large,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            val iconText = if (passwordVisible) "Hide" else "Show"
+                            TextButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Text(iconText)
+                            }
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -110,4 +117,12 @@ fun RegisterScreen(navController: NavController, drawerState: DrawerState) {
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun RegisterScreenPreview() {
+    val navController = androidx.navigation.compose.rememberNavController()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    RegisterScreen(navController, drawerState)
 }
