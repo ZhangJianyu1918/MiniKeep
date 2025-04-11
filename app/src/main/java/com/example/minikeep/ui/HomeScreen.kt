@@ -1,6 +1,8 @@
 package com.example.minikeep.ui
 
+import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,14 +15,20 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -59,206 +67,75 @@ fun HomeScreen(navController: NavController, drawerState: DrawerState) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-//                .background()
         ) {
             // 欢迎区域
-            WelcomeSection(userName = "User") // 可替换为动态用户名
+//            WelcomeSection(userName = "User")
+            CheckBoxList("Today Workout Plan")
+            CheckBoxList("Today Diet Plan")
 
-            // 每日概览卡片
-            DailyOverviewCard(
-                steps = 7500,
-                calories = 320,
-                onClick = { navController.navigate("profile") }
-            )
-
+            FormResultCard()
 
         }
     }
 }
 
-// 欢迎区域
 @Composable
-fun WelcomeSection(userName: String) {
+fun CheckBoxList(title: String) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(16.dp).background(color = MaterialTheme.colorScheme.secondaryContainer)
+    ) {
+        var checked1 by remember { mutableStateOf(false) }
+        var checked2 by remember { mutableStateOf(false) }
+        Text(text = title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
+        CheckoutBox(false, onCheckedChange = { checked1 = it },"Toast Text1", "Title1", "Description1")
+        CheckoutBox(false, onCheckedChange = { checked2 = it },"Toast Text2", "Title2", "Description2")
+    }
+}
+
+
+@Composable
+fun CheckoutBox(checked: Boolean, onCheckedChange: (Boolean) -> Unit,toastText: String, title: String, description: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 8.dp)
     ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = userName.first().toString().uppercase(),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+        val context = LocalContext.current
+        Checkbox(
+            checked = checked,
+            onCheckedChange = { isChecked ->
+                onCheckedChange(isChecked)
+                if (isChecked) {
+                    Toast.makeText(
+                        context,
+                        toastText,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column {
-            Text(
-                text = "Hi, $userName!",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = "Let's stay healthy today!",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-// 每日概览卡片
-@Composable
-fun DailyOverviewCard(steps: Int, calories: Int, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp), // Material 3 推荐 12.dp 圆角
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp), // 低层级卡片
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
         )
-    ) {
         Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth()
+            modifier = Modifier.padding(start = 8.dp)
         ) {
             Text(
-                text = "Today's Progress",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = "Steps",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "$steps",
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Steps",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_launcher_background), // 需要在 res/drawable 中添加
-                        contentDescription = "Calories",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "$calories kcal",
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Calories",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            LinearProgressIndicator(
-                progress = { steps / 10000f }, // 假设目标 10000 步
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray
             )
         }
     }
 }
 
-// 快速操作数据类
-data class QuickAction(val title: String, val route: String, val iconRes: Int)
 
-// 快速操作区域
+@Preview
 @Composable
-fun QuickActionsSection(actions: List<QuickAction>, navController: NavController) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Text(
-            text = "Quick Actions",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(actions.size) { index ->
-                QuickActionButton(
-                    title = actions[index].title,
-                    iconRes = actions[index].iconRes,
-                    onClick = { navController.navigate(actions[index].route) }
-                )
-            }
-        }
-    }
-}
-
-// 快速操作按钮
-@Composable
-fun QuickActionButton(title: String, iconRes: Int, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .width(80.dp)
-            .clickable { onClick() },
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(56.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Image(
-                    painter = painterResource(id = iconRes),
-                    contentDescription = title,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-    }
+fun HomeScreenPreview() {
+    val navController = androidx.navigation.compose.rememberNavController()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    HomeScreen(navController, drawerState)
 }

@@ -50,16 +50,16 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
     val firstDayOffset = firstDayOfMonth.dayOfWeek.value % 7
 
     val mockEvents = listOf(
-        MockEvent("Group Meeting", "2025-04-09T10:00:00", "2025-04-09T11:00:00"),
-        MockEvent("Launch", "2025-04-11T12:00:00", "2025-04-11T13:00:00"),
-        MockEvent("Project PeerView", "2025-04-12T14:00:00", "2025-04-12T15:30:00")
+        MockEvent("Back Day", "2025-04-09T10:00:00", "2025-04-09T11:00:00"),
+        MockEvent("Chest Day", "2025-04-11T12:00:00", "2025-04-11T13:00:00"),
+        MockEvent("Leg Day", "2025-04-12T14:00:00", "2025-04-12T15:30:00")
     )
 
     // 模拟一些事件
     val events = listOf(
-        CalendarEvent(LocalDate.now(), "会议"),
-        CalendarEvent(LocalDate.now().plusDays(2), "午餐"),
-        CalendarEvent(LocalDate.now().plusDays(3), "午餐")
+        CalendarEvent(LocalDate.now(), "Meeting"),
+        CalendarEvent(LocalDate.now().plusDays(2), "Launch"),
+        CalendarEvent(LocalDate.now().plusDays(3), "Launch")
     )
 
     Scaffold(
@@ -72,7 +72,12 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
                     }) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             )
         },
         floatingActionButton = {
