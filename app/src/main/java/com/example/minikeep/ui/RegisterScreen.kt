@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -49,22 +50,14 @@ fun RegisterScreen(navController: NavController, drawerState: DrawerState) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Register", style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        coroutineScope.launch { drawerState.open() }
-                    }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+            MiniKeepTopBar(
+                "Register",
+                drawerState = drawerState,
+                coroutineScope = coroutineScope,
+                modifier = Modifier
             )
-        }
+        },
+        modifier = Modifier.systemBarsPadding(),
     ) { padding ->
         Column(
             modifier = Modifier

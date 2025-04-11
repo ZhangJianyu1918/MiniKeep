@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -80,22 +81,14 @@ fun FormScreen(navController: NavController, drawerState: DrawerState) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Personal Info", style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        coroutineScope.launch { drawerState.open() }
-                    }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+            MiniKeepTopBar(
+                "Personal Form",
+                drawerState = drawerState,
+                coroutineScope = coroutineScope,
+                modifier = Modifier
             )
-        }
+        },
+        modifier = Modifier.systemBarsPadding(),
     ) { padding ->
         LazyColumn (
             modifier = Modifier

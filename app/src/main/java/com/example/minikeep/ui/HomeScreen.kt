@@ -36,6 +36,7 @@ import com.example.minikeep.R
 import com.example.minikeep.ui.theme.onPrimaryLight
 import com.example.minikeep.ui.theme.primaryLight
 import com.example.minikeep.ui.theme.secondaryDark
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,20 +46,11 @@ fun HomeScreen(navController: NavController, drawerState: DrawerState) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Home") },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        coroutineScope.launch { drawerState.open() }
-                    }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Open Drawer")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+            MiniKeepTopBar(
+                "Home",
+                drawerState = drawerState,
+                coroutineScope = coroutineScope,
+                modifier = Modifier
             )
         },
         modifier = Modifier.systemBarsPadding() // 支持 Edge-to-Edge
@@ -129,6 +121,32 @@ fun CheckoutBox(checked: Boolean, onCheckedChange: (Boolean) -> Unit,toastText: 
             )
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MiniKeepTopBar(
+    title: String,
+    drawerState: DrawerState,
+    coroutineScope: CoroutineScope,
+    modifier: Modifier = Modifier
+) {
+    TopAppBar(
+        title = { Text(title) },
+        navigationIcon = {
+            IconButton(onClick = {
+                coroutineScope.launch { drawerState.open() }
+            }) {
+                Icon(Icons.Default.Menu, contentDescription = "Open Drawer")
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ),
+        modifier = modifier
+    )
 }
 
 

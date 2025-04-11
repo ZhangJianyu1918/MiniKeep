@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -61,21 +62,15 @@ fun ProfileScreen(navController: NavController, drawerState: DrawerState) {
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
-        modifier = Modifier.background(primaryLight),
         topBar = {
-            TopAppBar(
-                title = { Text("Profile") },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        coroutineScope.launch {
-                            drawerState.open()
-                        }
-                    }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                }
+            MiniKeepTopBar(
+                "Profile",
+                drawerState = drawerState,
+                coroutineScope = coroutineScope,
+                modifier = Modifier
             )
-        }
+        },
+        modifier = Modifier.systemBarsPadding(),
     ) { padding ->
         Column(
             modifier = Modifier
