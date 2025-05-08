@@ -1,12 +1,12 @@
 package com.example.minikeep
 
 import android.annotation.SuppressLint
-import android.media.metrics.Event
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,9 +36,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
@@ -54,9 +52,13 @@ import com.example.minikeep.ui.MapScreen
 import com.example.minikeep.ui.ProfileScreen
 import com.example.minikeep.ui.RegisterScreen
 import com.example.minikeep.ui.theme.MiniKeepTheme
+import com.example.minikeep.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
+    private val userViewModel: UserViewModel by viewModels()
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,7 +69,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MiniKeepNavigation()
+                    MiniKeepNavigation(userViewModel)
                 }
             }
         }
@@ -93,7 +95,7 @@ fun GreetingPreview() {
 @SuppressLint("UnrememberedMutableState")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MiniKeepNavigation() {
+fun MiniKeepNavigation(userViewModel: UserViewModel) {
     val navigationController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -112,8 +114,8 @@ fun MiniKeepNavigation() {
     ) {
         NavHost(navController = navigationController, startDestination = "home") {
             composable("home") { HomeScreen(navigationController, drawerState) }
-            composable("login") { LoginScreen(navigationController, drawerState) }
-            composable("register") { RegisterScreen(navigationController, drawerState) }
+            composable("login") { LoginScreen(navigationController, drawerState, userViewModel) }
+            composable("register") { RegisterScreen(navigationController, drawerState, userViewModel) }
             composable("form") { FormScreen(navigationController, drawerState) }
             composable("map") { MapScreen(navigationController, drawerState) }
             composable("profile") { ProfileScreen(navigationController, drawerState) }
