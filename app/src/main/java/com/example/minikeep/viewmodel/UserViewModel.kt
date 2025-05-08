@@ -10,6 +10,9 @@ import com.example.minikeep.data.local.entity.User
 import com.example.minikeep.data.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -21,8 +24,9 @@ class UserViewModel(application: Application): AndroidViewModel(application) {
 
     val allUsers: Flow<List<User>> = userRepository.allUsers
 
-    var loginUser by mutableStateOf<User?>(null)
-        private set
+    private var _loginUser = MutableStateFlow<User?>(null)
+
+    val loginUser: StateFlow<User?> = _loginUser.asStateFlow()
 
     fun insertUser(user: User) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -45,9 +49,7 @@ class UserViewModel(application: Application): AndroidViewModel(application) {
     fun login(email: String, password: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val user = userRepository.queryByEmailAndPassword(email, password)
-            if (user != null) {
-                loginUser = user
-            }
+            _loginUser.value = user
         }
     }
 }

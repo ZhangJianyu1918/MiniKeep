@@ -1,6 +1,5 @@
 package com.example.minikeep.ui
 
-import android.app.Application
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,6 +26,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,9 +36,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.minikeep.viewmodel.UserViewModel
 
@@ -47,14 +47,18 @@ import com.example.minikeep.viewmodel.UserViewModel
 fun LoginScreen(navController: NavController, drawerState: DrawerState, userViewModel: UserViewModel) {
     val coroutineScope = rememberCoroutineScope()
 
-    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
+    val loginUser by userViewModel.loginUser.collectAsState()
 
-
-
-
-    val loginUser = userViewModel.loginUser
+    LaunchedEffect(loginUser) {
+        if (loginUser != null) {
+            navController.navigate("home") {
+                popUpTo("login") { inclusive = true }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -95,8 +99,8 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
-                        value = username,
-                        onValueChange = { username = it },
+                        value = email,
+                        onValueChange = { email = it },
                         label = { Text("Email") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large
@@ -109,22 +113,16 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
                         onValueChange = { password = it },
                         label = { Text("Password") },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.large
+                        shape = MaterialTheme.shapes.large,
+                        visualTransformation = PasswordVisualTransformation()
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
                         onClick = {
-                            userViewModel.login(username, password)
-                            Log.d("User", loginUser.toString())
-                            if (loginUser != null) {
-                                navController.navigate("home")
-                            }
-                            else {
-                                // display error message
-                            }
-                                  },
+                            userViewModel.login(email, password)
+                            Log.d("User", userViewModel.loginUser.toString()) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
                         colors = ButtonDefaults.buttonColors(
