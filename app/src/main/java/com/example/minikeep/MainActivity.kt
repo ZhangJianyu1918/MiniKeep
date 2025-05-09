@@ -112,7 +112,7 @@ fun MiniKeepNavigation(userViewModel: UserViewModel) {
             }
         }
     ) {
-        NavHost(navController = navigationController, startDestination = "home") {
+        NavHost(navController = navigationController, startDestination = "login") {
             composable("home") { HomeScreen(navigationController, drawerState) }
             composable("login") { LoginScreen(navigationController, drawerState, userViewModel) }
             composable("register") { RegisterScreen(navigationController, drawerState, userViewModel) }

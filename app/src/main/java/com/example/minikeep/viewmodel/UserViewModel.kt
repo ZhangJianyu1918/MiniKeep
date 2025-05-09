@@ -1,12 +1,10 @@
 package com.example.minikeep.viewmodel
 
 import android.app.Application
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.minikeep.data.local.entity.User
+import com.example.minikeep.data.repository.GoogleAuthenticationRepository
 import com.example.minikeep.data.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -18,11 +16,17 @@ import kotlinx.coroutines.withContext
 
 class UserViewModel(application: Application): AndroidViewModel(application) {
     private val userRepository: UserRepository
+
+    private val googleAuthenticationRepository: GoogleAuthenticationRepository
+
     init {
         userRepository = UserRepository(application)
+        googleAuthenticationRepository = GoogleAuthenticationRepository(getApplication())
     }
 
     val allUsers: Flow<List<User>> = userRepository.allUsers
+
+    val googleSignInClient = googleAuthenticationRepository.googleSignInClient
 
     private var _loginUser = MutableStateFlow<User?>(null)
 
@@ -52,4 +56,6 @@ class UserViewModel(application: Application): AndroidViewModel(application) {
             _loginUser.value = user
         }
     }
+
+
 }

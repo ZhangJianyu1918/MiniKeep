@@ -1,6 +1,5 @@
 package com.example.minikeep.ui
 
-import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +23,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,9 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.minikeep.data.local.entity.User
 import com.example.minikeep.viewmodel.UserViewModel
@@ -48,7 +47,18 @@ fun RegisterScreen(
     userViewModel: UserViewModel
 ) {
     val coroutineScope = rememberCoroutineScope()
-    var username by remember { mutableStateOf("") }
+
+    val loginUser by userViewModel.loginUser.collectAsState()
+
+    LaunchedEffect(loginUser) {
+        if (loginUser != null) {
+            navController.navigate("home") {
+                popUpTo("login") { inclusive = true }
+            }
+        }
+    }
+
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
     Scaffold(
@@ -90,8 +100,8 @@ fun RegisterScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
-                        value = username,
-                        onValueChange = { username = it },
+                        value = email,
+                        onValueChange = { email = it },
                         label = { Text("Email") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large
@@ -111,7 +121,7 @@ fun RegisterScreen(
 
                     Button(
                         onClick = { userViewModel.insertUser(
-                            User(email = username, password = password)
+                            User(email = email, password = password)
                         )},
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,

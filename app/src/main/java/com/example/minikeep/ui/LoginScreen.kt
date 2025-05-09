@@ -1,6 +1,8 @@
 package com.example.minikeep.ui
 
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -40,6 +42,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.minikeep.viewmodel.UserViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
+import com.google.firebase.Firebase
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.auth
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,6 +66,39 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
             }
         }
     }
+
+    LaunchedEffect(Firebase.auth.currentUser) {
+        Firebase.auth.currentUser?.let {
+            val user = Firebase.auth.currentUser
+           println( user?.displayName)
+            println(user?.email)
+            println(user?.photoUrl)
+
+            navController.navigate("home") {
+                popUpTo("login") { inclusive = true }
+            }
+        }
+    }
+
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                Firebase.auth.signInWithCredential(credential)
+                    .addOnCompleteListener() { authResult ->
+                        if (authResult.isSuccessful) {
+                            val user = Firebase.auth.currentUser
+                        }
+                        else {
+                            // failure
+                        }
+                    }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
 
     Scaffold(
         topBar = {
@@ -149,7 +189,10 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
                     }
 
                     OutlinedButton(
-                        onClick = { /* Google 登录逻辑 */ },
+                        onClick = {
+                            val signInIntent = userViewModel.googleSignInClient.signInIntent
+                            launcher.launch(signInIntent)
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
                         colors = ButtonDefaults.buttonColors(
