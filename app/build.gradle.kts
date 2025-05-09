@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.ui.text.google.fonts)
     implementation(libs.androidx.media3.common.ktx)
+    implementation(libs.androidx.navigation.runtime.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

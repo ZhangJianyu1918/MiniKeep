@@ -36,6 +36,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -90,12 +96,11 @@ fun RegisterScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 登录卡片
-            androidx.compose.material3.Card(
+            Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.extraLarge,
-                elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 6.dp),
-                colors = androidx.compose.material3.CardDefaults.cardColors(
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             ) {
@@ -146,7 +151,6 @@ fun RegisterScreen(
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
-
                     ) {
                         Text("Register")
                     }
@@ -163,24 +167,6 @@ fun RegisterScreen(
                         )
                     ) {
                         Text("Login")
-                    }
-
-                    OutlinedButton(
-                        onClick = { /* Google 登录逻辑 */ },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.large,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
-                    ) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.Filled.Email),
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Register with Google")
                     }
                 }
             }

@@ -30,6 +30,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,6 +64,7 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     val loginUser by userViewModel.loginUser.collectAsState()
     var passwordVisible = false
@@ -237,4 +240,12 @@ fun LoginScreenPreview() {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val userViewModel = UserViewModel(Application())
     LoginScreen(navController, drawerState, userViewModel)
+}
+
+@Preview
+@Composable
+fun LoginScreenPreview() {
+    val navController = androidx.navigation.compose.rememberNavController()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    LoginScreen(navController, drawerState)
 }
