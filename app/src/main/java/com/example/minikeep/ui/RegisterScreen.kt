@@ -1,6 +1,6 @@
 package com.example.minikeep.ui
 
-import androidx.compose.foundation.background
+import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,14 +13,12 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -31,6 +29,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,13 +44,30 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import kotlinx.coroutines.launch
+import com.example.minikeep.data.local.entity.User
+import com.example.minikeep.viewmodel.UserViewModel
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterScreen(navController: NavController, drawerState: DrawerState) {
+fun RegisterScreen(
+    navController: NavController,
+    drawerState: DrawerState,
+    userViewModel: UserViewModel
+) {
     val coroutineScope = rememberCoroutineScope()
-    var username by remember { mutableStateOf("") }
+
+    val loginUser by userViewModel.loginUser.collectAsState()
+
+    LaunchedEffect(loginUser) {
+        if (loginUser != null) {
+            navController.navigate("home") {
+                popUpTo("login") { inclusive = true }
+            }
+        }
+    }
+
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -93,9 +110,9 @@ fun RegisterScreen(navController: NavController, drawerState: DrawerState) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
-                        value = username,
-                        onValueChange = { username = it },
-                        label = { Text("Username") },
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large
                     )
@@ -120,7 +137,9 @@ fun RegisterScreen(navController: NavController, drawerState: DrawerState) {
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
-                        onClick = { /* 登录逻辑 */ },
+                        onClick = { userViewModel.insertUser(
+                            User(email = email, password = password)
+                        )},
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
                         colors = ButtonDefaults.buttonColors(
@@ -135,7 +154,7 @@ fun RegisterScreen(navController: NavController, drawerState: DrawerState) {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Button (
-                        onClick = { /* 注册逻辑 */ },
+                        onClick = { navController.navigate("login") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
                         colors = ButtonDefaults.buttonColors(
@@ -174,5 +193,6 @@ fun RegisterScreen(navController: NavController, drawerState: DrawerState) {
 fun RegisterScreenPreview() {
     val navController = androidx.navigation.compose.rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    RegisterScreen(navController, drawerState)
+    val userViewModel = UserViewModel(Application())
+    RegisterScreen(navController, drawerState, userViewModel)
 }

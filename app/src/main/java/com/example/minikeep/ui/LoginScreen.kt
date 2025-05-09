@@ -1,6 +1,9 @@
 package com.example.minikeep.ui
 
-import androidx.compose.foundation.background
+import android.app.Application
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,24 +16,24 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,15 +47,66 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import kotlinx.coroutines.launch
+import com.example.minikeep.viewmodel.UserViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
+import com.google.firebase.Firebase
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.auth
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavController, drawerState: DrawerState) {
+fun LoginScreen(navController: NavController, drawerState: DrawerState, userViewModel: UserViewModel) {
     val coroutineScope = rememberCoroutineScope()
-    var username by remember { mutableStateOf("") }
+
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
+
+    val loginUser by userViewModel.loginUser.collectAsState()
+    var passwordVisible = false
+
+
+    LaunchedEffect(loginUser) {
+        if (loginUser != null) {
+            navController.navigate("home") {
+                popUpTo("login") { inclusive = true }
+            }
+        }
+    }
+
+    LaunchedEffect(Firebase.auth.currentUser) {
+        Firebase.auth.currentUser?.let {
+            val user = Firebase.auth.currentUser
+           println( user?.displayName)
+            println(user?.email)
+            println(user?.photoUrl)
+
+            navController.navigate("home") {
+                popUpTo("login") { inclusive = true }
+            }
+        }
+    }
+
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                Firebase.auth.signInWithCredential(credential)
+                    .addOnCompleteListener() { authResult ->
+                        if (authResult.isSuccessful) {
+                            val user = Firebase.auth.currentUser
+                        }
+                        else {
+                            // failure
+                        }
+                    }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
 
     Scaffold(
         topBar = {
@@ -74,11 +128,11 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 登录卡片
-            androidx.compose.material3.Card(
+            Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.extraLarge,
-                elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 6.dp),
-                colors = androidx.compose.material3.CardDefaults.cardColors(
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             ) {
@@ -93,9 +147,9 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
-                        value = username,
-                        onValueChange = { username = it },
-                        label = { Text("Username") },
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large
                     )
@@ -120,7 +174,9 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState) {
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
-                        onClick = { /* 登录逻辑 */ },
+                        onClick = {
+                            userViewModel.login(email, password)
+                            Log.d("User", userViewModel.loginUser.toString()) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
                         colors = ButtonDefaults.buttonColors(
@@ -135,7 +191,7 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState) {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Button (
-                        onClick = { /* 注册逻辑 */ },
+                        onClick = { navController.navigate("register") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
                         colors = ButtonDefaults.buttonColors(
@@ -147,7 +203,10 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState) {
                     }
 
                     OutlinedButton(
-                        onClick = { /* Google 登录逻辑 */ },
+                        onClick = {
+                            val signInIntent = userViewModel.googleSignInClient.signInIntent
+                            launcher.launch(signInIntent)
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
                         colors = ButtonDefaults.buttonColors(
@@ -167,6 +226,8 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState) {
             }
         }
     }
+
+
 }
 
 @Preview
@@ -174,5 +235,6 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState) {
 fun LoginScreenPreview() {
     val navController = androidx.navigation.compose.rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    LoginScreen(navController, drawerState)
+    val userViewModel = UserViewModel(Application())
+    LoginScreen(navController, drawerState, userViewModel)
 }
