@@ -52,6 +52,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.material3.TextButton
+import android.widget.Toast
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import com.example.minikeep.ui.theme.backgroundLight
 import com.example.minikeep.ui.theme.primaryLight
 import kotlinx.coroutines.launch
@@ -60,6 +69,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ProfileScreen(navController: NavController, drawerState: DrawerState) {
     val coroutineScope = rememberCoroutineScope()
+    var showDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -82,14 +92,41 @@ fun ProfileScreen(navController: NavController, drawerState: DrawerState) {
 
         ) {
             WelcomeSection(userName = "User")
+            UserDataCard()
             RecommendFitnessPlan()
-            EditUserInformation()
+            if (showDialog) {
+                EditProfileDialog(onDismiss = { showDialog = false })
+            }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+            ) {
+                FloatingActionButton(
+                    onClick = { showDialog = true },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Profile"
+                    )
+                }
+
+                Text(
+                    text = "Edit Profile",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
         }
     }
 }
 
 
-// 欢迎区域
+// Welcome area
 @Composable
 fun WelcomeSection(userName: String) {
     Row(
@@ -131,6 +168,102 @@ fun WelcomeSection(userName: String) {
     }
 }
 
+@Composable
+fun UserDataCard() {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    var showBasicInfo by remember { mutableStateOf(false) }
+    var weight by remember { mutableStateOf("") }
+    var height by remember { mutableStateOf("") }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("My Data", style = MaterialTheme.typography.titleLarge)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ✅ 功能按钮区
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Button(
+                    onClick = { showBasicInfo = !showBasicInfo },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 4.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                ) {
+                    Text("Basic Info")
+                }
+
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            Toast.makeText(context, "This Week: 3 workouts", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 4.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                ) {
+                    Text("This Week")
+                }
+
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            Toast.makeText(context, "Total: 120 workouts", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 4.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                ) {
+                    Text("Total")
+                }
+            }
+
+            if (showBasicInfo) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = weight,
+                    onValueChange = { weight = it },
+                    label = { Text("Weight (kg)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = height,
+                    onValueChange = { height = it },
+                    label = { Text("Height (cm)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun RecommendFitnessPlan() {
@@ -151,59 +284,61 @@ fun RecommendFitnessPlan() {
             EventCard(event)
         }
     }
+
 }
 
 @Composable
-fun EditUserInformation() {
+fun EditProfileDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
 
-    Column(
-        modifier = Modifier.padding(8.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("Edit Your Account", style = MaterialTheme.typography.titleLarge)
-        OutlinedTextField(
-            value = username,
-            onValueChange = { username = it },
-            label = { Text("New UserName") },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-            keyboardOptions = KeyboardOptions.Default.copy()
-        )
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("New Password") },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-            keyboardOptions = KeyboardOptions.Default.copy()
-        )
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Confirm New Password") },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-            keyboardOptions = KeyboardOptions.Default.copy()
-        )
-        Button(
-            onClick = ({})
-        ) {
-            Text("Submit")
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Profile") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("New Username") },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("New Password") },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    visualTransformation = PasswordVisualTransformation()
+                )
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it },
+                    label = { Text("Confirm Password") },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    visualTransformation = PasswordVisualTransformation()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (password != confirmPassword) {
+                    Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Profile updated", Toast.LENGTH_SHORT).show()
+                    onDismiss()
+                }
+            }) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
         }
-        Button(
-            onClick = ({}),
-            colors = ButtonColors(
-                contentColor = MaterialTheme.colorScheme.error,
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                disabledContentColor = MaterialTheme.colorScheme.onError,
-                disabledContainerColor = MaterialTheme.colorScheme.onErrorContainer
-            ),
-            modifier = Modifier.padding(vertical = 24.dp)
-        ) {
-            Text("Sign Out")
-        }
-    }
+    )
 }
 
 
