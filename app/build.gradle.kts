@@ -80,6 +80,8 @@ dependencies {
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
     implementation(libs.accompanist.permissions)
+    implementation("com.google.maps.android:maps-compose:2.11.4")
+
 
 
     // Google Calendar API
@@ -87,4 +89,7 @@ dependencies {
     implementation(libs.google.oauth.client.jetty)
     implementation(libs.google.api.services.calendar)
     implementation(libs.play.services.auth)
+    implementation("com.google.accompanist:accompanist-permissions:0.31.5-beta")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
 }
