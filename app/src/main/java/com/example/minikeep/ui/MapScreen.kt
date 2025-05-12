@@ -1,98 +1,167 @@
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
+
 package com.example.minikeep.ui
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.DrawerState
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.accompanist.permissions.*
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.*
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@SuppressLint("MissingPermission")
 @Composable
 fun MapScreen(navController: NavController, drawerState: DrawerState) {
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    // Set the default location to Melbourne
-    val melbourneLocation = LatLng(-37.8136, 144.9631) // Melbourne coordinates
+    val monashClayton = LatLng(-37.9150, 145.1347) // Default destination
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(melbourneLocation, 14f) // Fixed zoom level for Melbourne
+        position = CameraPosition.fromLatLngZoom(monashClayton, 14f)
     }
 
-    // Predefined fitness locations in Melbourne
-    val fitnessLocations = listOf(
-        FitnessLocation("Fitness First Melbourne Central", LatLng(-37.8116, 144.9625), "Fully equipped city centre gym"),
-        FitnessLocation("F45 Training Southbank", LatLng(-37.8230, 144.9587), "High-intensity team training courses"),
-        FitnessLocation("Flagstaff Gardens", LatLng(-37.8105, 144.9546), "City parks for running and outdoor exercise"),
-        FitnessLocation("Royal Botanic Gardens", LatLng(-37.8315, 144.9796), "Beautiful scenery, suitable for walking and jogging"),
-        FitnessLocation("Princes Park", LatLng(-37.7834, 144.9582), "Spacious green space and fitness trails")
+    var currentLocation by remember { mutableStateOf<LatLng?>(null) }
+    var inputAddress by remember { mutableStateOf("") }
+
+    val permissionState = rememberMultiplePermissionsState(
+        listOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
     )
+
+    LaunchedEffect(permissionState.allPermissionsGranted) {
+        if (permissionState.allPermissionsGranted) {
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                location?.let {
+                    currentLocation = LatLng(it.latitude, it.longitude)
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             MiniKeepTopBar(
-                title = "Map",
+                title = "Map & Navigation",
                 drawerState = drawerState,
                 coroutineScope = coroutineScope,
                 modifier = Modifier
             )
         },
-        modifier = Modifier.systemBarsPadding()
+        modifier = Modifier.fillMaxSize()
     ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            // Display the map centered on Melbourne
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)) {
+
+            // Input address
+            OutlinedTextField(
+                value = inputAddress,
+                onValueChange = { inputAddress = it },
+                label = { Text("Enter destination address") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            )
+
+            // Navigate to typed destination
+            Button(
+                onClick = {
+                    if (inputAddress.isNotBlank()) {
+                        launchNavigation(context, inputAddress)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            ) {
+                Text("Navigate to Entered Address")
+            }
+
+            // Navigate to Monash Clayton
+            Button(
+                onClick = {
+                    launchNavigation(context, "${monashClayton.latitude},${monashClayton.longitude}")
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text("Navigate to Monash Clayton")
+            }
+
+            // Navigate from current location (if available)
+            Button(
+                onClick = {
+                    currentLocation?.let {
+                        launchNavigation(
+                            context,
+                            "${monashClayton.latitude},${monashClayton.longitude}",
+                            origin = "${it.latitude},${it.longitude}"
+                        )
+                    }
+                },
+                enabled = currentLocation != null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text("Navigate from My Location to Monash Clayton")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Map display
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
-                uiSettings = MapUiSettings(
-                    zoomControlsEnabled = true,
-                    myLocationButtonEnabled = false // Disable location button
-                ),
                 properties = MapProperties(
-                    isMyLocationEnabled = false // Disable user location
+                    isMyLocationEnabled = permissionState.allPermissionsGranted
+                ),
+                uiSettings = MapUiSettings(
+                    myLocationButtonEnabled = true,
+                    zoomControlsEnabled = true,
+                    zoomGesturesEnabled = true,
+                    scrollGesturesEnabled = true
                 )
             ) {
-                // Add markers for fitness locations in Melbourne
-                fitnessLocations.forEach { location ->
-                    Marker(
-                        state = MarkerState(position = location.position),
-                        title = location.name,
-                        snippet = location.description,
-                        onClick = {
-                            // Navigate to a form screen when a marker is clicked
-                            navController.navigate("form")
-                            true
-                        }
-                    )
-                }
+                Marker(
+                    state = MarkerState(position = monashClayton),
+                    title = "Monash University Clayton",
+                    snippet = "Default destination"
+                )
             }
         }
     }
 }
 
-// Data class for fitness locations
-data class FitnessLocation(
-    val name: String,
-    val position: LatLng,
-    val description: String
-)
+fun launchNavigation(context: Context, destination: String, origin: String? = null) {
+    val uriString = if (origin != null) {
+        "https://www.google.com/maps/dir/?api=1&origin=${Uri.encode(origin)}&destination=${Uri.encode(destination)}&travelmode=driving"
+    } else {
+        "google.navigation:q=${Uri.encode(destination)}"
+    }
+
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uriString)).apply {
+        setPackage("com.google.android.apps.maps")
+    }
+
+    if (intent.resolveActivity(context.packageManager) != null) {
+        context.startActivity(intent)
+    }
+}
