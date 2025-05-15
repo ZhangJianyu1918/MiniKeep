@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
@@ -64,6 +65,15 @@ import androidx.compose.material3.FloatingActionButtonDefaults
 import com.example.minikeep.ui.theme.backgroundLight
 import com.example.minikeep.ui.theme.primaryLight
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,43 +98,38 @@ fun ProfileScreen(navController: NavController, drawerState: DrawerState) {
                 .padding(padding)
                 .padding(16.dp)
                 .background(MaterialTheme.colorScheme.background),
-            horizontalAlignment = Alignment.CenterHorizontally,
-
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             WelcomeSection(userName = "User")
-            UserDataCard()
             RecommendFitnessPlan()
-            if (showDialog) {
-                EditProfileDialog(onDismiss = { showDialog = false })
-            }
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+            NoActivitySection(navController = navController)
+            UserDataCard(navController = navController, showDialog = { showDialog = true })
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = { /* TODO: sign out logic */ },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFFE6E6),
+                    contentColor = Color(0xFFAA0000)
+                ),
+                shape = MaterialTheme.shapes.medium
             ) {
-                FloatingActionButton(
-                    onClick = { showDialog = true },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit Profile"
-                    )
-                }
-
                 Text(
-                    text = "Edit Profile",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(top = 8.dp)
+                    text = "Sign Out",
+                    style = MaterialTheme.typography.titleMedium
                 )
+            }
+
+            if (showDialog) {
+                EditProfileDialog(onDismiss = { showDialog = false })
             }
         }
     }
 }
-
 
 // Welcome area
 @Composable
@@ -154,12 +159,6 @@ fun WelcomeSection(userName: String) {
 
         Column {
             Text(
-                text = "Hi, $userName!",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
                 text = "Let's stay healthy today!",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -168,8 +167,48 @@ fun WelcomeSection(userName: String) {
     }
 }
 
+
 @Composable
-fun UserDataCard() {
+fun NoActivitySection(navController: NavController) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Explore your workout options!",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+//        Text(
+//            text = "Explore your workout options!",
+//            style = MaterialTheme.typography.bodySmall,
+//            color = MaterialTheme.colorScheme.onSurfaceVariant,
+//            textAlign = TextAlign.Center
+//        )
+//        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedButton(
+            onClick = { navController.navigate("home") },
+            shape = RoundedCornerShape(50),
+            border = BorderStroke(1.dp, Color(0xFF00C27B)),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color(0xFF00C27B)
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Text("Start Now", style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}
+
+@Composable
+fun UserDataCard(navController: NavController, showDialog: () -> Unit) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -185,85 +224,48 @@ fun UserDataCard() {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("My Data", style = MaterialTheme.typography.titleLarge)
+//            Text("My Data", style = MaterialTheme.typography.titleLarge)
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ✅ 功能按钮区
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Button(
-                    onClick = { showBasicInfo = !showBasicInfo },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 4.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                ) {
-                    Text("Basic Info")
-                }
-
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            Toast.makeText(context, "This Week: 3 workouts", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 4.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                ) {
-                    Text("This Week")
-                }
-
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            Toast.makeText(context, "Total: 120 workouts", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 4.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                ) {
-                    Text("Total")
-                }
+                IconWithLabel(Icons.Default.Edit, "Basic Info", onClick = { navController.navigate("form") })
+                IconWithLabel(Icons.Default.DateRange, "Plan", onClick = { /* TODO */ })
+                IconWithLabel(Icons.Default.List, "Records", onClick = { /* TODO */ })
+                IconWithLabel(Icons.Default.DateRange, "This Week", onClick = {
+                    coroutineScope.launch {
+                        Toast.makeText(context, "This Week: 3 workouts", Toast.LENGTH_SHORT).show()
+                    }
+                })
             }
 
-            if (showBasicInfo) {
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = weight,
-                    onValueChange = { weight = it },
-                    label = { Text("Weight (kg)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = height,
-                    onValueChange = { height = it },
-                    label = { Text("Height (cm)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                IconWithLabel(Icons.Default.List, "Total", onClick = {
+                    coroutineScope.launch {
+                        Toast.makeText(context, "Total: 120 workouts", Toast.LENGTH_SHORT).show()
+                    }
+                })
+                IconWithLabel(Icons.Default.DateRange, "Calendar", onClick = {
+                    navController.navigate("calendar")
+                })
+                IconWithLabel(Icons.Default.Edit, "Edit Profile", onClick = showDialog)
+                IconWithLabel(Icons.Default.Settings, "Settings", onClick = { /* TODO */ })
             }
         }
     }
 }
+
 
 @Composable
 fun RecommendFitnessPlan() {
@@ -278,7 +280,7 @@ fun RecommendFitnessPlan() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
-            Text("Your Workout Plan", style = MaterialTheme.typography.titleLarge)
+            Text("My Workout Plan", style = MaterialTheme.typography.titleLarge)
         }
         items(mockEvents) { event ->
             EventCard(event)
@@ -341,6 +343,26 @@ fun EditProfileDialog(onDismiss: () -> Unit) {
     )
 }
 
+@Composable
+fun IconWithLabel(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        FloatingActionButton(
+            onClick = onClick,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(56.dp)
+        ) {
+            Icon(imageVector = icon, contentDescription = label)
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
 
 @Preview
 @Composable
@@ -349,3 +371,4 @@ fun ProfileScreenPreview() {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     ProfileScreen(navController, drawerState)
 }
+

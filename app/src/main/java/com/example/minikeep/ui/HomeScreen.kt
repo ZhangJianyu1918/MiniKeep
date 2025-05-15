@@ -1,5 +1,7 @@
 package com.example.minikeep.ui
 
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
@@ -43,6 +45,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(navController: NavController, drawerState: DrawerState) {
     val coroutineScope = rememberCoroutineScope()
+    val currentUser = Firebase.auth.currentUser
+    val userName = currentUser?.displayName ?: currentUser?.email ?: "User"
 
     Scaffold(
         topBar = {
@@ -60,14 +64,41 @@ fun HomeScreen(navController: NavController, drawerState: DrawerState) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // 欢迎区域
-//            WelcomeSection(userName = "User")
+            GreetingSection(userName = userName)
             CheckBoxList("Today Workout Plan")
             CheckBoxList("Today Diet Plan")
 
             FormResultCard()
 
         }
+    }
+}
+@Composable
+fun GreetingSection(userName: String = "User") {
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    val greeting = when (hour) {
+        in 5..11 -> "Good Morning ☀️"
+        in 12..17 -> "Good Afternoon 🌤️"
+        in 18..21 -> "Good Evening 🌙"
+        else -> "Good Night 🌌"
+    }
+
+    Column(
+
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+    ) {
+        Text(
+            text = greeting,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = userName,
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground
+        )
     }
 }
 
