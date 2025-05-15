@@ -192,7 +192,9 @@ fun EditUserInformation() {
             Text("Submit")
         }
         Button(
-            onClick = ({}),
+            onClick = ({
+
+            }),
             colors = ButtonColors(
                 contentColor = MaterialTheme.colorScheme.error,
                 containerColor = MaterialTheme.colorScheme.errorContainer,

@@ -67,7 +67,7 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
     var passwordVisible by remember { mutableStateOf(false) }
 
     val loginUser by userViewModel.loginUser.collectAsState()
-    var passwordVisible = false
+
 
 
     LaunchedEffect(loginUser) {
@@ -240,12 +240,4 @@ fun LoginScreenPreview() {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val userViewModel = UserViewModel(Application())
     LoginScreen(navController, drawerState, userViewModel)
-}
-
-@Preview
-@Composable
-fun LoginScreenPreview() {
-    val navController = androidx.navigation.compose.rememberNavController()
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    LoginScreen(navController, drawerState)
 }

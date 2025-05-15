@@ -1,6 +1,7 @@
 package com.example.minikeep.ui
 
 
+import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -27,6 +28,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.api.services.calendar.model.Event
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
@@ -218,6 +221,40 @@ fun CalendarDay(day: Int, hasEvent: Boolean, isToday: Boolean) {
 }
 
 data class CalendarEvent(val date: LocalDate, val title: String)
+
+
+private fun createGoogleCalendarEvent(context: Context, event: Event) {
+    // 启动一个协程来运行网络请求
+    CoroutineScope(Dispatchers.IO).launch {
+//        try {
+//            val credential = GoogleAccountCredential.usingOAuth2(
+//                , listOf(CalendarScopes.CALENDAR)
+//            )
+//            credential.selectedAccount = GoogleSignIn.getLastSignedInAccount(this@MainActivity)?.account
+//
+//            val service = Calendar.Builder(
+//                AndroidHttp.newCompatibleTransport(),
+//                JacksonFactory.getDefaultInstance(),
+//                credential
+//            ).setApplicationName("Your App Name").build()
+//
+//            val event = Event().apply {
+//                summary = "测试会议"
+//                location = "虚拟会议室"
+//                description = "测试描述"
+//                start = EventDateTime().setDateTime(DateTime("2025-05-10T10:00:00+08:00"))
+//                end = EventDateTime().setDateTime(DateTime("2025-05-10T11:00:00+08:00"))
+//            }
+//
+//            service.events().insert("primary", event).execute()
+//            Log.d("Calendar", "事件添加成功")
+//
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//            Log.e("Calendar", "事件添加失败: ${e.message}")
+//        }
+    }
+}
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
