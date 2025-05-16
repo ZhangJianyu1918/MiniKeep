@@ -66,8 +66,7 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
-        val loginUser by userViewModel.loginUser.collectAsState()
-
+    val loginUser by userViewModel.loginUser.collectAsState()
 
     LaunchedEffect(loginUser) {
         if (loginUser != null) {

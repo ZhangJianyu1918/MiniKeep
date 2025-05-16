@@ -1,7 +1,15 @@
 package com.example.minikeep.ui
 
 
+import android.accounts.Account
+import android.app.Activity
+import android.app.Application
+import android.content.Context
+import android.content.ContextWrapper
 import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,21 +25,47 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
+import com.google.api.client.http.javanet.NetHttpTransport
+import com.google.api.client.json.gson.GsonFactory
+import com.google.api.client.util.DateTime
+import com.google.api.services.calendar.CalendarScopes
+import com.google.api.services.calendar.Calendar
 import com.google.api.services.calendar.model.Event
+import com.google.api.services.calendar.model.EventDateTime
+import com.google.api.services.calendar.model.Events
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+
 
 data class MockEvent(
     val summary: String,
@@ -42,24 +76,78 @@ data class MockEvent(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val currentMonth = YearMonth.now()
     val daysInMonth = currentMonth.lengthOfMonth()
     val firstDayOfMonth = currentMonth.atDay(1)
     val firstDayOffset = firstDayOfMonth.dayOfWeek.value % 7
+    var showDialog by remember { mutableStateOf(false) }
+    var eventTitle by remember { mutableStateOf("") }
+    var eventBeginDate by remember { mutableStateOf(LocalDate.now().toString()) }
+    var eventEndDate by remember { mutableStateOf(LocalDate.now().toString()) }
+//    var events by remember { mutableStateOf<List<Event>>(emptyList()) }
+    var events by remember { mutableStateOf<Events?>(null) }
+    val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
 
-    val mockEvents = listOf(
-        MockEvent("Back Day", "2025-04-09T10:00:00", "2025-04-09T11:00:00"),
-        MockEvent("Chest Day", "2025-04-11T12:00:00", "2025-04-11T13:00:00"),
-        MockEvent("Leg Day", "2025-04-12T14:00:00", "2025-04-12T15:30:00")
-    )
+    val account = GoogleSignIn.getLastSignedInAccount(context)
+//    val googleCalendarService = account?.let { getCalendarService(context) }
+    val authorizationLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            // 用户已授权，重新尝试获取事件
+            account?.let {
+                fetchCalendarEvents(context, it, onResult = { fetchedEvents ->
+                    if (fetchedEvents != null) {
+                        events = fetchedEvents // 注意这里 events 需要声明为 mutableStateOf
+                    }
+                }, onNeedAuthorization = { /* no-op */ }) // 授权已经完成了
+            }
+        } else {
+            Toast.makeText(context, "日历授权被拒绝", Toast.LENGTH_SHORT).show()
+        }
+    }
 
-    // 模拟一些事件
-    val events = listOf(
-        CalendarEvent(LocalDate.now(), "Meeting"),
-        CalendarEvent(LocalDate.now().plusDays(2), "Launch"),
-        CalendarEvent(LocalDate.now().plusDays(3), "Launch")
-    )
+    LaunchedEffect(account) {
+        account?.let {
+            fetchCalendarEvents(
+                context = context,
+                account = it,
+                onResult = { fetchedEvents ->
+                    if (fetchedEvents != null) {
+                        events = fetchedEvents
+                    }
+                },
+                onNeedAuthorization = { exception ->
+                    authorizationLauncher.launch(exception.intent)
+                }
+            )
+        }
+    }
+
+//    val authorizationLauncher = rememberLauncherForActivityResult(
+//        contract = ActivityResultContracts.StartActivityForResult()
+//    ) { result ->
+//        if (result.resultCode == Activity.RESULT_OK) {
+//            // User granted permission, try fetching the calendar events again
+//            val updatedAccount = GoogleSignIn.getLastSignedInAccount(context)
+//            updatedAccount?.let {
+//                fetchCalendarEvents(context, it) { fetchedEvents ->
+//                    events = fetchedEvents
+//                }
+//            }
+//        } else {
+//            // User denied permission, handle accordingly
+//            Toast.makeText(context, "Calendar permission denied", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    // Update the fetchCalendarEvents function to use the launcher
+//    fun handleUserRecoverableAuth(exception: UserRecoverableAuthIOException) {
+//        authorizationLauncher.launch(exception.intent)
+//    }
+
 
     Scaffold(
         topBar = {
@@ -74,7 +162,7 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-
+                    showDialog = true
                 },
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -132,7 +220,9 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
                 // 填充日期
                 items(daysInMonth) { dayIndex ->
                     val date = firstDayOfMonth.plusDays(dayIndex.toLong())
-                    val hasEvent = events.any { it.date == date }
+
+//                    val hasEvent = events.any { it.start == date }
+                    val hasEvent = false
                     CalendarDay(
                         day = date.dayOfMonth,
                         hasEvent = hasEvent,
@@ -140,15 +230,104 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
                     )
                 }
             }
-            if (mockEvents.isEmpty()) {
-                Text(text = "No events", style = MaterialTheme.typography.bodyLarge)
-            } else {
-                LazyColumn {
-                    items(mockEvents) { event ->
-                        EventCard(event)
+//            if (events.isEmpty()) {
+//                Text(text = "No events", style = MaterialTheme.typography.bodyLarge)
+//            } else {
+//                LazyColumn {
+//                    items(events) { event ->
+//                        EventCard(event)
+//                    }
+//                }
+//            }
+        }
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Add Calendar Event") },
+                text = {
+                    Column {
+                        OutlinedTextField(
+                            value = eventTitle,
+                            onValueChange = { eventTitle = it },
+                            label = { Text("Event Title") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = eventBeginDate,
+                            onValueChange = { eventBeginDate = it },
+                            label = { Text("Event Date (YYYY-MM-DD)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = eventEndDate,
+                            onValueChange = { eventEndDate = it },
+                            label = { Text("Event Date (YYYY-MM-DD)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        // TODO 你可以在这里处理添加事件的逻辑
+                        coroutineScope.launch(Dispatchers.IO) {
+                            try {
+                                getCalendarService(context)?.events()?.insert("primary",
+                                    Event()
+                                        .setSummary(eventTitle)
+                                        .setStart(EventDateTime().setDate(DateTime(eventBeginDate)))
+                                        .setEnd(EventDateTime().setDate(DateTime(eventEndDate)))
+                                )?.execute()
+                                // 如果需要，切回主线程通知UI刷新
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                        showDialog = false
+                    }) {
+                        Text("Add")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDialog = false }) {
+                        Text("Cancel")
                     }
                 }
-            }
+            )
+        }
+    }
+}
+
+@Composable
+fun EventCard(event: Event) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            disabledContainerColor = MaterialTheme.colorScheme.primary,
+            disabledContentColor = MaterialTheme.colorScheme.onPrimary
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = event.summary,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Start: ${event.start}",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = "End: ${event.end}",
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
@@ -186,8 +365,6 @@ fun EventCard(event: MockEvent) {
         }
     }
 }
-
-
 @Composable
 fun CalendarDay(day: Int, hasEvent: Boolean, isToday: Boolean) {
     Box(
@@ -218,6 +395,122 @@ fun CalendarDay(day: Int, hasEvent: Boolean, isToday: Boolean) {
 }
 
 data class CalendarEvent(val date: LocalDate, val title: String)
+
+
+//fun getCalendarService(context: Context, account: GoogleSignInAccount): Calendar {
+//    val credential = GoogleAccountCredential.usingOAuth2(
+//        context, listOf(CalendarScopes.CALENDAR)
+//    )
+//    credential.selectedAccount = account.account
+//
+//    return Calendar.Builder(
+//        NetHttpTransport(),
+////        GoogleNetHttpTransport.newTrustedTransport(),
+//        GsonFactory.getDefaultInstance(),
+//        credential
+//    )
+//        .setApplicationName("MiniKeep")
+//        .build()
+//}
+suspend fun getCalendarService(context: Context): Calendar? {
+    val user = Firebase.auth.currentUser ?: return null
+    val tokenResult = user.getIdToken(true).await() // 使用 await 等待异步完成
+
+    val credential = GoogleAccountCredential.usingOAuth2(
+        context, listOf(CalendarScopes.CALENDAR)
+    )
+    credential.selectedAccount = user.email?.let { Account(it, "com.google") }
+
+    return try {
+        Calendar.Builder(
+            NetHttpTransport(),
+            GsonFactory.getDefaultInstance(),
+            credential
+        ).setApplicationName("MiniKeep").build()
+    } catch (e: UserRecoverableAuthIOException) {
+        // 🔥 捕获需要授权的异常
+        if (context is Activity) {
+            context.startActivityForResult(e.intent, 1001) // 1001 是你自定义的 requestCode
+        }
+        null
+    }
+}
+
+
+fun fetchCalendarEvents(context: Context, account: GoogleSignInAccount, onResult: (Events?) -> Unit) {
+    val REQUEST_AUTHORIZATION = 1001
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            val service = getCalendarService(context)
+//            println("Service: " + service?.Calendars().toString())
+            val now = DateTime(System.currentTimeMillis())
+            val events = service?.events()?.list("primary")?.execute()
+            println("Calendar Events: " + events.toString())
+            val items = events?.items
+            if (!items.isNullOrEmpty()) {
+                println("Event count: ${items.size}")
+                for (event in items) {
+                    println("Event: ${event.summary}")
+                }
+            } else {
+                println("Events: No upcoming events found.")
+            }
+
+            onResult(events)
+        } catch (e: Exception) {
+            e.printStackTrace()
+
+            // Handle the UserRecoverableAuthIOException
+            if (e is UserRecoverableAuthIOException) {
+                // Switch to main thread to show the consent dialog
+                withContext(Dispatchers.Main) {
+                    // The intent contains the consent dialog
+                    val intent = e.intent
+                    // Start the intent to prompt the user for permission
+                    if (context is Activity) {
+                        context.startActivityForResult(intent, REQUEST_AUTHORIZATION)
+                    } else if (context is ContextWrapper && context.baseContext is Activity) {
+                        (context.baseContext as Activity).startActivityForResult(intent, REQUEST_AUTHORIZATION)
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun fetchCalendarEvents(
+    context: Context,
+    account: GoogleSignInAccount,
+    onResult: (Events?) -> Unit,
+    onNeedAuthorization: (UserRecoverableAuthIOException) -> Unit
+) {
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            val service = getCalendarService(context)
+            val now = DateTime(System.currentTimeMillis())
+            val events = service?.events()?.list("primary")
+                ?.setTimeMin(now)
+                ?.setOrderBy("startTime")
+                ?.setSingleEvents(true)
+                ?.execute()
+
+            withContext(Dispatchers.Main) {
+                onResult(events)
+            }
+        } catch (e: UserRecoverableAuthIOException) {
+            // 需要授权，切到主线程执行 launcher
+            withContext(Dispatchers.Main) {
+                onNeedAuthorization(e)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                onResult(null)
+            }
+        }
+    }
+}
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)

@@ -159,6 +159,12 @@ fun WelcomeSection(userName: String) {
 
         Column {
             Text(
+                text = "Hi, $userName!",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
                 text = "Let's stay healthy today!",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
