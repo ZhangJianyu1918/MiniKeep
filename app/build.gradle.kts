@@ -105,10 +105,22 @@ dependencies {
     implementation(libs.google.oauth.client.jetty)
     implementation(libs.google.api.services.calendar)
     implementation(libs.play.services.auth)
+    implementation("com.google.api-client:google-api-client-android:2.5.0")
+    implementation("com.google.http-client:google-http-client-gson:1.46.3")
+    implementation("com.google.oauth-client:google-oauth-client:1.34.1")
+
+    // Retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
+
+
     implementation("com.google.accompanist:accompanist-permissions:0.31.5-beta")
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation(platform("com.google.firebase:firebase-bom:32.7.3"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.android.gms:play-services-auth:21.1.1")
+
+
 
 }
