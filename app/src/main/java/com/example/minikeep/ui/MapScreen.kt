@@ -1,12 +1,7 @@
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
-
 package com.example.minikeep.ui
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,12 +11,14 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.*
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
-import kotlinx.coroutines.launch
+import kotlin.math.*
+import java.text.SimpleDateFormat
+import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @SuppressLint("MissingPermission")
 @Composable
 fun MapScreen(navController: NavController, drawerState: DrawerState) {
@@ -29,13 +26,10 @@ fun MapScreen(navController: NavController, drawerState: DrawerState) {
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    val monashClayton = LatLng(-37.9150, 145.1347) // Default destination
+    val monashClayton = LatLng(-37.9150, 145.1347)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(monashClayton, 14f)
     }
-
-    var currentLocation by remember { mutableStateOf<LatLng?>(null) }
-    var inputAddress by remember { mutableStateOf("") }
 
     val permissionState = rememberMultiplePermissionsState(
         listOf(
@@ -44,14 +38,23 @@ fun MapScreen(navController: NavController, drawerState: DrawerState) {
         )
     )
 
-    LaunchedEffect(permissionState.allPermissionsGranted) {
-        if (permissionState.allPermissionsGranted) {
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                location?.let {
-                    currentLocation = LatLng(it.latitude, it.longitude)
-                }
-            }
-        }
+    var hasCheckedInToday by remember { mutableStateOf(false) }
+    val today = remember {
+        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    }
+    var lastCheckInDate by remember { mutableStateOf("") }
+
+    var selectedPoint by remember { mutableStateOf<LatLng?>(null) }
+    var distanceText by remember { mutableStateOf("") }
+    var isInsideGeofence by remember { mutableStateOf(false) }
+
+    fun haversineDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val R = 6371e3 // Earth radius in meters
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = sin(dLat / 2).pow(2.0) + cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLon / 2).pow(2.0)
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return R * c
     }
 
     Scaffold(
@@ -65,71 +68,52 @@ fun MapScreen(navController: NavController, drawerState: DrawerState) {
         },
         modifier = Modifier.fillMaxSize()
     ) { padding ->
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)) {
-
-            // Input address
-            OutlinedTextField(
-                value = inputAddress,
-                onValueChange = { inputAddress = it },
-                label = { Text("Enter destination address") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-            )
-
-            // Navigate to typed destination
-            Button(
-                onClick = {
-                    if (inputAddress.isNotBlank()) {
-                        launchNavigation(context, inputAddress)
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-            ) {
-                Text("Navigate to Entered Address")
-            }
-
-            // Navigate to Monash Clayton
-            Button(
-                onClick = {
-                    launchNavigation(context, "${monashClayton.latitude},${monashClayton.longitude}")
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text("Navigate to Monash Clayton")
-            }
-
-            // Navigate from current location (if available)
-            Button(
-                onClick = {
-                    currentLocation?.let {
-                        launchNavigation(
-                            context,
-                            "${monashClayton.latitude},${monashClayton.longitude}",
-                            origin = "${it.latitude},${it.longitude}"
-                        )
-                    }
-                },
-                enabled = currentLocation != null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text("Navigate from My Location to Monash Clayton")
-            }
-
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Map display
+            Text(
+                text = if (lastCheckInDate == today) "✅ Checked in: $today" else "Not checked in yet",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Button(
+                onClick = {
+                    lastCheckInDate = today
+                    hasCheckedInToday = true
+                },
+                enabled = lastCheckInDate != today && isInsideGeofence,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Text("Check in @ Monash Clayton")
+            }
+
+            if (distanceText.isNotEmpty()) {
+                Text(
+                    text = distanceText,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
+                onMapClick = { latLng ->
+                    selectedPoint = latLng
+                    val distance = haversineDistance(
+                        latLng.latitude, latLng.longitude,
+                        monashClayton.latitude, monashClayton.longitude
+                    )
+                    distanceText = String.format("Distance to Monash Clayton: %.2f meters", distance)
+                    isInsideGeofence = distance <= 100
+                },
                 properties = MapProperties(
                     isMyLocationEnabled = permissionState.allPermissionsGranted
                 ),
@@ -143,25 +127,26 @@ fun MapScreen(navController: NavController, drawerState: DrawerState) {
                 Marker(
                     state = MarkerState(position = monashClayton),
                     title = "Monash University Clayton",
-                    snippet = "Default destination"
+                    snippet = "Default Fitness Location"
                 )
+                Circle(
+                    center = monashClayton,
+                    radius = 100.0,
+                    strokeColor = MaterialTheme.colorScheme.primary,
+                    fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                )
+                selectedPoint?.let {
+                    Marker(
+                        state = MarkerState(position = it),
+                        title = "Selected Point"
+                    )
+                    Circle(
+                        center = it,
+                        radius = 3.0,
+                        fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                    )
+                }
             }
         }
-    }
-}
-
-fun launchNavigation(context: Context, destination: String, origin: String? = null) {
-    val uriString = if (origin != null) {
-        "https://www.google.com/maps/dir/?api=1&origin=${Uri.encode(origin)}&destination=${Uri.encode(destination)}&travelmode=driving"
-    } else {
-        "google.navigation:q=${Uri.encode(destination)}"
-    }
-
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uriString)).apply {
-        setPackage("com.google.android.apps.maps")
-    }
-
-    if (intent.resolveActivity(context.packageManager) != null) {
-        context.startActivity(intent)
     }
 }
