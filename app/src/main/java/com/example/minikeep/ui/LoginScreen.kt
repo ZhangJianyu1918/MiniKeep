@@ -206,7 +206,6 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
                     OutlinedButton(
                         onClick = {
                             val signInIntent = userViewModel.googleSignInClient.signInIntent
-
                             launcher.launch(signInIntent)
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -240,3 +239,4 @@ fun LoginScreenPreview() {
     val userViewModel = UserViewModel(Application())
     LoginScreen(navController, drawerState, userViewModel)
 }
+
