@@ -39,6 +39,8 @@ import com.example.minikeep.ui.theme.onPrimaryLight
 import com.example.minikeep.ui.theme.primaryLight
 import com.example.minikeep.ui.theme.secondaryDark
 import kotlinx.coroutines.CoroutineScope
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateMapOf
 import kotlinx.coroutines.launch
 
 data class WorkoutTask(
@@ -47,6 +49,79 @@ data class WorkoutTask(
     val progress: Float = 0.0f, // 0.0 ~ 1.0
     val isCompleted: Boolean = false
 )
+
+data class ExerciseData(
+    val sets: Int = 0,
+    val weightOrTime: String = "",
+    val progress: Float = 0f
+)
+
+@Composable
+fun ExerciseCard(
+    name: String,
+    data: ExerciseData,
+    onReset: () -> Unit,
+    onUpdate: (ExerciseData) -> Unit
+) {
+    val isCompleted = data.progress >= 1f
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isCompleted) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "$name ${if (isCompleted) "✅" else ""}",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onReset) {
+                    Text("Reset")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 设置组数和时间/重量
+            Row {
+                OutlinedTextField(
+                    value = data.sets.toString(),
+                    onValueChange = {
+                        onUpdate(data.copy(sets = it.toIntOrNull() ?: 0))
+                    },
+                    label = { Text("Sets") },
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                OutlinedTextField(
+                    value = data.weightOrTime,
+                    onValueChange = {
+                        onUpdate(data.copy(weightOrTime = it))
+                    },
+                    label = { Text("Time/Weight") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 进度条
+            Slider(
+                value = data.progress,
+                onValueChange = {
+                    onUpdate(data.copy(progress = it))
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
 
 @Composable
 fun WorkoutItemCard(task: WorkoutTask, onCheckedChange: (Boolean) -> Unit) {
@@ -88,18 +163,17 @@ fun WorkoutItemCard(task: WorkoutTask, onCheckedChange: (Boolean) -> Unit) {
 
 @Composable
 fun TodayWorkoutPlanSection() {
-    val allOptions = listOf("Push Ups", "Sit Ups", "Squats", "Plank", "Lunges")
-    var selectedOptions by remember { mutableStateOf(listOf<String>()) }
-    var workoutMap by remember {
-        mutableStateOf(
-            allOptions.associateWith { mutableStateOf(0) }
-        )
-    }
-    var targetMap by remember {
-        mutableStateOf(
-            allOptions.associateWith { mutableStateOf(3) }
-        )
-    }
+    val categories = listOf("Strength", "Cardio", "Flexibility")
+    var selectedTab by remember { mutableStateOf(0) }
+    val context = LocalContext.current
+
+    val exerciseOptions = mapOf(
+        "Strength" to listOf("Bench Press", "Squat", "Deadlift", "Shoulder Press", "Bicep Curl", "Leg Press"),
+        "Cardio" to listOf("Running", "Cycling", "Treadmill", "Jump Rope", "Rowing Machine"),
+        "Flexibility" to listOf("Yoga", "Stretching", "Pilates", "Barre")
+    )
+
+    val selectedExercises = remember { mutableStateMapOf<String, ExerciseData>() }
 
     Column(
         modifier = Modifier
@@ -109,108 +183,117 @@ fun TodayWorkoutPlanSection() {
             .padding(16.dp)
     ) {
         Text("Today Workout Plan", style = MaterialTheme.typography.titleMedium)
-
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 多选下拉选择器
-        DropdownMenuMultiSelect(
-            options = allOptions,
-            selectedOptions = selectedOptions,
-            onSelectionChange = { selectedOptions = it }
-        )
+        TabRow(selectedTabIndex = selectedTab) {
+            categories.forEachIndexed { index, category ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = { Text(category) }
+                )
+            }
+        }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        selectedOptions.forEach { option ->
-            val current = workoutMap[option]?.value ?: 0
-            val target = targetMap[option]?.value ?: 1
-            val progress = current.toFloat() / target
-            val isCompleted = current >= target
+        val currentCategory = categories[selectedTab]
+        val currentOptions = exerciseOptions[currentCategory] ?: emptyList()
 
-            Card(
+        currentOptions.forEach { exercise ->
+            val isSelected = selectedExercises.containsKey(exercise)
+            val data = selectedExercises[exercise] ?: ExerciseData()
+
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(option, style = MaterialTheme.typography.titleMedium)
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    ) {
-                        Text("Target Sets: ")
-                        OutlinedTextField(
-                            value = target.toString(),
-                            onValueChange = {
-                                targetMap[option]?.value = it.toIntOrNull() ?: target
-                            },
-                            modifier = Modifier
-                                .width(80.dp)
-                                .height(56.dp),
-                            textStyle = MaterialTheme.typography.bodyMedium,
-                            singleLine = true
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text("Done: $current/$target", style = MaterialTheme.typography.bodySmall)
-                    }
-
-                    LinearProgressIndicator(
-                        progress = progress.coerceIn(0f, 1f),
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Button(
-                            onClick = {
-                                workoutMap[option]?.value = (current + 1).coerceAtMost(target)
-                            },
-                            enabled = !isCompleted,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isCompleted) Color(0xFFDFF5E1) else MaterialTheme.colorScheme.primary,
-                                contentColor = if (isCompleted) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onPrimary
-                            )
-                        ) {
-                            Text(if (isCompleted) "✅ Completed" else "Complete 1 Set")
+                    .clickable {
+                        if (isSelected) {
+                            selectedExercises.remove(exercise)
+                        } else {
+                            selectedExercises[exercise] = ExerciseData()
                         }
-
-                        OutlinedButton(
-                            onClick = {
-                                workoutMap[option]?.value = 0
-                            }
-                        ) {
+                    }
+                    .padding(vertical = 6.dp)
+                    .background(
+                        if (data.progress >= 1f) Color(0xFFE8F5E9) else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = {
+                            if (it) selectedExercises[exercise] = ExerciseData()
+                            else selectedExercises.remove(exercise)
+                        }
+                    )
+                    Text(
+                        text = if (data.progress >= 1f) "$exercise ✅" else exercise,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    if (isSelected) {
+                        TextButton(onClick = {
+                            selectedExercises[exercise] = ExerciseData()
+                        }) {
                             Text("Reset")
                         }
+                    }
+                }
+
+                if (isSelected) {
+                    Column(modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)) {
+                        Row {
+                            OutlinedTextField(
+                                value = data.sets.toString(),
+                                onValueChange = {
+                                    val sets = it.toIntOrNull() ?: 0
+                                    selectedExercises[exercise] = data.copy(sets = sets)
+                                },
+                                label = { Text("Sets") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            OutlinedTextField(
+                                value = data.weightOrTime,
+                                onValueChange = {
+                                    selectedExercises[exercise] = data.copy(weightOrTime = it)
+                                },
+                                label = { Text("Weight / Time") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text("Progress: ${(data.progress * 100).toInt()}%")
+                        Slider(
+                            value = data.progress,
+                            onValueChange = {
+                                selectedExercises[exercise] = data.copy(progress = it)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
         }
 
-        // 总体进度条
-        if (selectedOptions.isNotEmpty()) {
-            val totalProgress = selectedOptions.map {
-                val current = workoutMap[it]?.value ?: 0
-                val target = targetMap[it]?.value ?: 1
-                if (target > 0) current.toFloat() / target else 0f
-            }.average().toFloat()
-
-            Text("Overall Progress", style = MaterialTheme.typography.titleSmall)
-            LinearProgressIndicator(
-                progress = totalProgress.coerceIn(0f, 1f),
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.primary
-            )
+        if (selectedExercises.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = {
+                Toast.makeText(context, "Template Saved!", Toast.LENGTH_SHORT).show()
+            }) {
+                Text("Save as Template")
+            }
         }
     }
 }
+
 
 @Composable
 fun DropdownMenuMultiSelect(
