@@ -41,6 +41,216 @@ import com.example.minikeep.ui.theme.secondaryDark
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+data class WorkoutTask(
+    val title: String,
+    val description: String,
+    val progress: Float = 0.0f, // 0.0 ~ 1.0
+    val isCompleted: Boolean = false
+)
+
+@Composable
+fun WorkoutItemCard(task: WorkoutTask, onCheckedChange: (Boolean) -> Unit) {
+    var checked by remember { mutableStateOf(task.isCompleted) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = checked,
+                    onCheckedChange = {
+                        checked = it
+                        onCheckedChange(it)
+                    }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(task.title, style = MaterialTheme.typography.titleMedium)
+                    Text(task.description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = task.progress,
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+fun TodayWorkoutPlanSection() {
+    val allOptions = listOf("Push Ups", "Sit Ups", "Squats", "Plank", "Lunges")
+    var selectedOptions by remember { mutableStateOf(listOf<String>()) }
+    var workoutMap by remember {
+        mutableStateOf(
+            allOptions.associateWith { mutableStateOf(0) }
+        )
+    }
+    var targetMap by remember {
+        mutableStateOf(
+            allOptions.associateWith { mutableStateOf(3) }
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(12.dp))
+            .padding(16.dp)
+    ) {
+        Text("Today Workout Plan", style = MaterialTheme.typography.titleMedium)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 多选下拉选择器
+        DropdownMenuMultiSelect(
+            options = allOptions,
+            selectedOptions = selectedOptions,
+            onSelectionChange = { selectedOptions = it }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        selectedOptions.forEach { option ->
+            val current = workoutMap[option]?.value ?: 0
+            val target = targetMap[option]?.value ?: 1
+            val progress = current.toFloat() / target
+            val isCompleted = current >= target
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(option, style = MaterialTheme.typography.titleMedium)
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    ) {
+                        Text("Target Sets: ")
+                        OutlinedTextField(
+                            value = target.toString(),
+                            onValueChange = {
+                                targetMap[option]?.value = it.toIntOrNull() ?: target
+                            },
+                            modifier = Modifier
+                                .width(80.dp)
+                                .height(56.dp),
+                            textStyle = MaterialTheme.typography.bodyMedium,
+                            singleLine = true
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text("Done: $current/$target", style = MaterialTheme.typography.bodySmall)
+                    }
+
+                    LinearProgressIndicator(
+                        progress = progress.coerceIn(0f, 1f),
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Button(
+                            onClick = {
+                                workoutMap[option]?.value = (current + 1).coerceAtMost(target)
+                            },
+                            enabled = !isCompleted,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isCompleted) Color(0xFFDFF5E1) else MaterialTheme.colorScheme.primary,
+                                contentColor = if (isCompleted) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Text(if (isCompleted) "✅ Completed" else "Complete 1 Set")
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                workoutMap[option]?.value = 0
+                            }
+                        ) {
+                            Text("Reset")
+                        }
+                    }
+                }
+            }
+        }
+
+        // 总体进度条
+        if (selectedOptions.isNotEmpty()) {
+            val totalProgress = selectedOptions.map {
+                val current = workoutMap[it]?.value ?: 0
+                val target = targetMap[it]?.value ?: 1
+                if (target > 0) current.toFloat() / target else 0f
+            }.average().toFloat()
+
+            Text("Overall Progress", style = MaterialTheme.typography.titleSmall)
+            LinearProgressIndicator(
+                progress = totalProgress.coerceIn(0f, 1f),
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+fun DropdownMenuMultiSelect(
+    options: List<String>,
+    selectedOptions: List<String>,
+    onSelectionChange: (List<String>) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column {
+        OutlinedButton(onClick = { expanded = true }) {
+            Text("Choose Workouts (${selectedOptions.size})")
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { label ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = {
+                        val updated = if (label in selectedOptions) {
+                            selectedOptions - label
+                        } else {
+                            selectedOptions + label
+                        }
+                        onSelectionChange(updated)
+                    },
+                    trailingIcon = {
+                        if (label in selectedOptions) {
+                            Icon(Icons.Default.Favorite, contentDescription = null, tint = Color.Red)
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, drawerState: DrawerState) {
@@ -57,7 +267,7 @@ fun HomeScreen(navController: NavController, drawerState: DrawerState) {
                 modifier = Modifier
             )
         },
-        modifier = Modifier.systemBarsPadding() // 支持 Edge-to-Edge
+        modifier = Modifier.systemBarsPadding()
     ) { padding ->
         Column(
             modifier = Modifier
@@ -65,7 +275,7 @@ fun HomeScreen(navController: NavController, drawerState: DrawerState) {
                 .padding(padding)
         ) {
             GreetingSection(userName = userName)
-            CheckBoxList("Today Workout Plan")
+            TodayWorkoutPlanSection()
             CheckBoxList("Today Diet Plan")
 
             FormResultCard()
