@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -65,13 +64,13 @@ fun RegisterScreen(
 
     val loginUser by userViewModel.loginUser.collectAsState()
 
-    LaunchedEffect(loginUser) {
-        if (loginUser != null) {
-            navController.navigate("home") {
-                popUpTo("login") { inclusive = true }
-            }
-        }
-    }
+//    LaunchedEffect(loginUser) {
+//        if (loginUser != null) {
+//            navController.navigate("home") {
+//                popUpTo("login") { inclusive = true }
+//            }
+//        }
+//    }
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }

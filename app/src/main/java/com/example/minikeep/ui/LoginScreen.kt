@@ -67,8 +67,6 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
     var passwordVisible by remember { mutableStateOf(false) }
 
     val loginUser by userViewModel.loginUser.collectAsState()
-    var passwordVisible = false
-
 
     LaunchedEffect(loginUser) {
         if (loginUser != null) {
@@ -208,6 +206,7 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
                     OutlinedButton(
                         onClick = {
                             val signInIntent = userViewModel.googleSignInClient.signInIntent
+
                             launcher.launch(signInIntent)
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -240,12 +239,4 @@ fun LoginScreenPreview() {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val userViewModel = UserViewModel(Application())
     LoginScreen(navController, drawerState, userViewModel)
-}
-
-@Preview
-@Composable
-fun LoginScreenPreview() {
-    val navController = androidx.navigation.compose.rememberNavController()
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    LoginScreen(navController, drawerState)
 }
