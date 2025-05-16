@@ -1,12 +1,12 @@
 package com.example.minikeep.ui
 
 
-import android.accounts.Account
+import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.Application
 import android.content.Context
 import android.content.ContextWrapper
 import android.os.Build
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,15 +14,12 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -44,7 +40,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.client.util.DateTime
@@ -53,12 +48,9 @@ import com.google.api.services.calendar.Calendar
 import com.google.api.services.calendar.model.Event
 import com.google.api.services.calendar.model.EventDateTime
 import com.google.api.services.calendar.model.Events
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.YearMonth
@@ -73,6 +65,7 @@ data class MockEvent(
     val end: String
 )
 
+@SuppressLint("MutableCollectionMutableState")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
@@ -98,19 +91,16 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
         if (result.resultCode == Activity.RESULT_OK) {
             // 用户已授权，重新尝试获取事件
             account?.let {
-                fetchCalendarEvents(context, it, onResult = { fetchedEvents ->
-                    if (fetchedEvents != null) {
-                        events = fetchedEvents // 注意这里 events 需要声明为 mutableStateOf
-                    }
-                }, onNeedAuthorization = { /* no-op */ }) // 授权已经完成了
+                fetchCalendarEvents(context, it, onResult = { events = it }, onNeedAuthorization = { })
             }
         } else {
             Toast.makeText(context, "日历授权被拒绝", Toast.LENGTH_SHORT).show()
         }
     }
-
+    var service: Calendar
     LaunchedEffect(account) {
         account?.let {
+            service = getCalendarService(context, it)
             fetchCalendarEvents(
                 context = context,
                 account = it,
@@ -230,15 +220,7 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
                     )
                 }
             }
-//            if (events.isEmpty()) {
-//                Text(text = "No events", style = MaterialTheme.typography.bodyLarge)
-//            } else {
-//                LazyColumn {
-//                    items(events) { event ->
-//                        EventCard(event)
-//                    }
-//                }
-//            }
+
         }
         if (showDialog) {
             AlertDialog(
@@ -270,19 +252,7 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
                 confirmButton = {
                     TextButton(onClick = {
                         // TODO 你可以在这里处理添加事件的逻辑
-                        coroutineScope.launch(Dispatchers.IO) {
-                            try {
-                                getCalendarService(context)?.events()?.insert("primary",
-                                    Event()
-                                        .setSummary(eventTitle)
-                                        .setStart(EventDateTime().setDate(DateTime(eventBeginDate)))
-                                        .setEnd(EventDateTime().setDate(DateTime(eventEndDate)))
-                                )?.execute()
-                                // 如果需要，切回主线程通知UI刷新
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }
+                       insertEvent(context, account, eventTitle, eventBeginDate, eventEndDate)
                         showDialog = false
                     }) {
                         Text("Add")
@@ -397,51 +367,49 @@ fun CalendarDay(day: Int, hasEvent: Boolean, isToday: Boolean) {
 data class CalendarEvent(val date: LocalDate, val title: String)
 
 
-//fun getCalendarService(context: Context, account: GoogleSignInAccount): Calendar {
-//    val credential = GoogleAccountCredential.usingOAuth2(
-//        context, listOf(CalendarScopes.CALENDAR)
-//    )
-//    credential.selectedAccount = account.account
-//
-//    return Calendar.Builder(
-//        NetHttpTransport(),
-////        GoogleNetHttpTransport.newTrustedTransport(),
-//        GsonFactory.getDefaultInstance(),
-//        credential
-//    )
-//        .setApplicationName("MiniKeep")
-//        .build()
-//}
-suspend fun getCalendarService(context: Context): Calendar? {
-    val user = Firebase.auth.currentUser ?: return null
-    val tokenResult = user.getIdToken(true).await() // 使用 await 等待异步完成
-
+fun getCalendarService(context: Context, account: GoogleSignInAccount): Calendar {
     val credential = GoogleAccountCredential.usingOAuth2(
         context, listOf(CalendarScopes.CALENDAR)
     )
-    credential.selectedAccount = user.email?.let { Account(it, "com.google") }
+    credential.selectedAccount = account.account
 
-    return try {
-        Calendar.Builder(
-            NetHttpTransport(),
-            GsonFactory.getDefaultInstance(),
-            credential
-        ).setApplicationName("MiniKeep").build()
-    } catch (e: UserRecoverableAuthIOException) {
-        // 🔥 捕获需要授权的异常
-        if (context is Activity) {
-            context.startActivityForResult(e.intent, 1001) // 1001 是你自定义的 requestCode
-        }
-        null
-    }
+    return Calendar.Builder(
+        NetHttpTransport(),
+        GsonFactory.getDefaultInstance(),
+        credential
+    ).setApplicationName("MiniKeep").build()
 }
+//suspend fun getCalendarService(context: Context): Calendar? {
+//    val user = Firebase.auth.currentUser ?: return null
+//    val tokenResult = user.getIdToken(true).await() // 使用 await 等待异步完成
+//
+//    val credential = GoogleAccountCredential.usingOAuth2(
+//        context, listOf(CalendarScopes.CALENDAR)
+//    )
+//    credential.selectedAccount = user.email?.let { Account(it, "com.google") }
+//
+//    return try {
+//        Calendar.Builder(
+//            NetHttpTransport(),
+//            GsonFactory.getDefaultInstance(),
+//            credential
+//        ).setApplicationName("MiniKeep").build()
+//    } catch (e: UserRecoverableAuthIOException) {
+//        // 🔥 捕获需要授权的异常
+//        if (context is Activity) {
+//            context.startActivityForResult(e.intent, 1001) // 1001 是你自定义的 requestCode
+//        }
+//        null
+//    }
+//}
 
 
 fun fetchCalendarEvents(context: Context, account: GoogleSignInAccount, onResult: (Events?) -> Unit) {
     val REQUEST_AUTHORIZATION = 1001
     CoroutineScope(Dispatchers.IO).launch {
         try {
-            val service = getCalendarService(context)
+//            val service = getCalendarService(context)
+            val service = getCalendarService(context, account)
 //            println("Service: " + service?.Calendars().toString())
             val now = DateTime(System.currentTimeMillis())
             val events = service?.events()?.list("primary")?.execute()
@@ -486,7 +454,7 @@ fun fetchCalendarEvents(
 ) {
     CoroutineScope(Dispatchers.IO).launch {
         try {
-            val service = getCalendarService(context)
+            val service = getCalendarService(context, account)
             val now = DateTime(System.currentTimeMillis())
             val events = service?.events()?.list("primary")
                 ?.setTimeMin(now)
@@ -511,6 +479,35 @@ fun fetchCalendarEvents(
     }
 }
 
+fun insertEvent(
+    context: Context,
+    account: GoogleSignInAccount?,
+    eventTitle: String,
+    eventBeginDate: String,
+    eventEndDate: String
+) {
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            val service = account?.let { getCalendarService(context, it) }
+            if (service != null) {
+                service.events()?.insert("primary",
+                    Event()
+                        .setSummary(eventTitle)
+                        .setStart(EventDateTime().setDate(DateTime(eventBeginDate)))
+                        .setEnd(EventDateTime().setDate(DateTime(eventEndDate)))
+                )?.execute()
+                println("InsertEvent 插入事件成功")
+            }
+        }
+        catch (e: Exception) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                Log.e("InsertEvent", "插入事件失败：${e.message}")
+                Toast.makeText(context, "插入事件失败：${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+}
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
