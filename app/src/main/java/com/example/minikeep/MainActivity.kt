@@ -118,7 +118,7 @@ fun MiniKeepNavigation(userViewModel: UserViewModel) {
             composable("register") { RegisterScreen(navigationController, drawerState, userViewModel) }
             composable("form") { FormScreen(navigationController, drawerState) }
             composable("map") { MapScreen(navigationController, drawerState) }
-            composable("profile") { ProfileScreen(navigationController, drawerState) }
+            composable("profile") { ProfileScreen(navigationController, drawerState, userViewModel) }
             composable("calendar") { CalendarScreen(navigationController, drawerState) }
         }
     }
