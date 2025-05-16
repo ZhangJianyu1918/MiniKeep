@@ -7,7 +7,7 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:3797093735:android:5374482a58b8a2f327f3c2",
+        "mobilesdk_app_id": "1:3797093735:android:a727dfe443c91b6a27f3c2",
         "android_client_info": {
           "package_name": "com.example.minikeep"
         }
@@ -28,7 +28,7 @@
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBoZis5TeNc-fXxzUYgMawCxv0QAxa2Xnk"
+          "current_key": "AIzaSyCxENzUOPPHEOtuVtMSOSelOOg527YsJuw"
         }
       ],
       "services": {
