@@ -14,8 +14,10 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -36,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.minikeep.data.local.entity.CalendarEvent
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
@@ -52,8 +55,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -80,18 +85,36 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
     var eventBeginDate by remember { mutableStateOf(LocalDate.now().toString()) }
     var eventEndDate by remember { mutableStateOf(LocalDate.now().toString()) }
 //    var events by remember { mutableStateOf<List<Event>>(emptyList()) }
-    var events by remember { mutableStateOf<Events?>(null) }
+    var events by remember { mutableStateOf<List<CalendarEvent>>(emptyList()) }
     val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
 
     val account = GoogleSignIn.getLastSignedInAccount(context)
 //    val googleCalendarService = account?.let { getCalendarService(context) }
+//    val authorizationLauncher = rememberLauncherForActivityResult(
+//        contract = ActivityResultContracts.StartActivityForResult()
+//    ) { result ->
+//        if (result.resultCode == Activity.RESULT_OK) {
+//            // 用户已授权，重新尝试获取事件
+//            account?.let {
+//                fetchCalendarEvents(context, it, onResult = { events = it }, onNeedAuthorization = { })
+//            }
+//        } else {
+//            Toast.makeText(context, "日历授权被拒绝", Toast.LENGTH_SHORT).show()
+//        }
+//    }
     val authorizationLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            // 用户已授权，重新尝试获取事件
             account?.let {
-                fetchCalendarEvents(context, it, onResult = { events = it }, onNeedAuthorization = { })
+                fetchCalendarEvents(
+                    context = context,
+                    account = it,
+                    onResult = { fetchedEvents -> events = fetchedEvents },
+                    onNeedAuthorization = { exception ->
+//                        authorizationLauncher.launch(exception.intent)
+                    }
+                )
             }
         } else {
             Toast.makeText(context, "日历授权被拒绝", Toast.LENGTH_SHORT).show()
@@ -104,40 +127,13 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
             fetchCalendarEvents(
                 context = context,
                 account = it,
-                onResult = { fetchedEvents ->
-                    if (fetchedEvents != null) {
-                        events = fetchedEvents
-                    }
-                },
+                onResult = { fetchedEvents -> events = fetchedEvents },
                 onNeedAuthorization = { exception ->
                     authorizationLauncher.launch(exception.intent)
                 }
             )
         }
     }
-
-//    val authorizationLauncher = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.StartActivityForResult()
-//    ) { result ->
-//        if (result.resultCode == Activity.RESULT_OK) {
-//            // User granted permission, try fetching the calendar events again
-//            val updatedAccount = GoogleSignIn.getLastSignedInAccount(context)
-//            updatedAccount?.let {
-//                fetchCalendarEvents(context, it) { fetchedEvents ->
-//                    events = fetchedEvents
-//                }
-//            }
-//        } else {
-//            // User denied permission, handle accordingly
-//            Toast.makeText(context, "Calendar permission denied", Toast.LENGTH_SHORT).show()
-//        }
-//    }
-//
-//    // Update the fetchCalendarEvents function to use the launcher
-//    fun handleUserRecoverableAuth(exception: UserRecoverableAuthIOException) {
-//        authorizationLauncher.launch(exception.intent)
-//    }
-
 
     Scaffold(
         topBar = {
@@ -220,7 +216,19 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
 
+            // 添加 LazyColumn 显示事件列表
+            Text(
+                text = "Events",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+            LazyColumn {
+                items(items = events) { event ->
+                    EventCard(event)
+                }
+            }
         }
         if (showDialog) {
             AlertDialog(
@@ -269,7 +277,7 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
 }
 
 @Composable
-fun EventCard(event: Event) {
+fun EventCard(event: CalendarEvent) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -364,9 +372,6 @@ fun CalendarDay(day: Int, hasEvent: Boolean, isToday: Boolean) {
     }
 }
 
-data class CalendarEvent(val date: LocalDate, val title: String)
-
-
 fun getCalendarService(context: Context, account: GoogleSignInAccount): Calendar {
     val credential = GoogleAccountCredential.usingOAuth2(
         context, listOf(CalendarScopes.CALENDAR)
@@ -379,91 +384,47 @@ fun getCalendarService(context: Context, account: GoogleSignInAccount): Calendar
         credential
     ).setApplicationName("MiniKeep").build()
 }
-//suspend fun getCalendarService(context: Context): Calendar? {
-//    val user = Firebase.auth.currentUser ?: return null
-//    val tokenResult = user.getIdToken(true).await() // 使用 await 等待异步完成
-//
-//    val credential = GoogleAccountCredential.usingOAuth2(
-//        context, listOf(CalendarScopes.CALENDAR)
-//    )
-//    credential.selectedAccount = user.email?.let { Account(it, "com.google") }
-//
-//    return try {
-//        Calendar.Builder(
-//            NetHttpTransport(),
-//            GsonFactory.getDefaultInstance(),
-//            credential
-//        ).setApplicationName("MiniKeep").build()
-//    } catch (e: UserRecoverableAuthIOException) {
-//        // 🔥 捕获需要授权的异常
-//        if (context is Activity) {
-//            context.startActivityForResult(e.intent, 1001) // 1001 是你自定义的 requestCode
-//        }
-//        null
-//    }
-//}
 
-
-fun fetchCalendarEvents(context: Context, account: GoogleSignInAccount, onResult: (Events?) -> Unit) {
-    val REQUEST_AUTHORIZATION = 1001
-    CoroutineScope(Dispatchers.IO).launch {
-        try {
-//            val service = getCalendarService(context)
-            val service = getCalendarService(context, account)
-//            println("Service: " + service?.Calendars().toString())
-            val now = DateTime(System.currentTimeMillis())
-            val events = service?.events()?.list("primary")?.execute()
-            println("Calendar Events: " + events.toString())
-            val items = events?.items
-            if (!items.isNullOrEmpty()) {
-                println("Event count: ${items.size}")
-                for (event in items) {
-                    println("Event: ${event.summary}")
-                }
-            } else {
-                println("Events: No upcoming events found.")
-            }
-
-            onResult(events)
-        } catch (e: Exception) {
-            e.printStackTrace()
-
-            // Handle the UserRecoverableAuthIOException
-            if (e is UserRecoverableAuthIOException) {
-                // Switch to main thread to show the consent dialog
-                withContext(Dispatchers.Main) {
-                    // The intent contains the consent dialog
-                    val intent = e.intent
-                    // Start the intent to prompt the user for permission
-                    if (context is Activity) {
-                        context.startActivityForResult(intent, REQUEST_AUTHORIZATION)
-                    } else if (context is ContextWrapper && context.baseContext is Activity) {
-                        (context.baseContext as Activity).startActivityForResult(intent, REQUEST_AUTHORIZATION)
-                    }
-                }
-            }
-        }
-    }
-}
-
+@RequiresApi(Build.VERSION_CODES.O)
 fun fetchCalendarEvents(
     context: Context,
     account: GoogleSignInAccount,
-    onResult: (Events?) -> Unit,
+//    onResult: (Events?) -> Unit,
+    onResult: (List<CalendarEvent>) -> Unit,
     onNeedAuthorization: (UserRecoverableAuthIOException) -> Unit
 ) {
     CoroutineScope(Dispatchers.IO).launch {
         try {
             val service = getCalendarService(context, account)
-            val now = DateTime(System.currentTimeMillis())
+            val now = System.currentTimeMillis()
+            // Set timeMin to 7 days before now
+            val timeMin = DateTime(now - 7 * 24 * 60 * 60 * 1000) // 7 days in milliseconds
+            // Set timeMax to 7 days after now
+            val timeMax = DateTime(now + 7 * 24 * 60 * 60 * 1000) // 7 days in milliseconds
             val events = service?.events()?.list("primary")
-                ?.setTimeMin(now)
+                ?.setTimeMin(timeMin)
+                ?.setTimeMax(timeMax)
                 ?.setOrderBy("startTime")
                 ?.setSingleEvents(true)
                 ?.execute()
-
+            val calendarEvents = events?.items?.mapNotNull { event ->
+                val startDateTime = event.start?.dateTime?.value?.let {
+                    Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                } ?: return@mapNotNull null
+                val endDateTime = event.end?.dateTime?.value?.let {
+                    Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                } ?: return@mapNotNull null
+                CalendarEvent(
+                    id = event.id ?: "",
+                    summary = event.summary ?: "No Title",
+                    start = startDateTime,
+                    end = endDateTime
+                )
+            } ?: emptyList()
+            println("calendarEvents: $calendarEvents")
             withContext(Dispatchers.Main) {
-                onResult(events)
+//                onResult(events)
+                onResult(calendarEvents)
             }
         } catch (e: UserRecoverableAuthIOException) {
             // 需要授权，切到主线程执行 launcher
@@ -473,7 +434,7 @@ fun fetchCalendarEvents(
         } catch (e: Exception) {
             e.printStackTrace()
             withContext(Dispatchers.Main) {
-                onResult(null)
+                onResult(emptyList())
             }
         }
     }
