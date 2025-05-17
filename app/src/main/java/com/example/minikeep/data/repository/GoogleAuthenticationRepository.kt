@@ -16,8 +16,8 @@ class GoogleAuthenticationRepository(context: Context) {
 
     private val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
 //        .requestIdToken("823384730210-7jj7nh5b3ia7t3f258g6csii69s08lij.apps.googleusercontent.com")
-//        .requestIdToken("3797093735-8pgvsu8b3hk99ju4i88i7vf0gu6ogi2i.apps.googleusercontent.com")
-        .requestIdToken("3797093735-uoov16b22ltlrf40lq0u3ptvm47ovbic.apps.googleusercontent.com")
+        .requestIdToken("3797093735-8pgvsu8b3hk99ju4i88i7vf0gu6ogi2i.apps.googleusercontent.com")
+//        .requestIdToken("3797093735-uoov16b22ltlrf40lq0u3ptvm47ovbic.apps.googleusercontent.com")
         .requestEmail()
         .requestScopes(Scope(CalendarScopes.CALENDAR))
         .build()
