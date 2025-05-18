@@ -52,12 +52,15 @@ import com.example.minikeep.ui.MapScreen
 import com.example.minikeep.ui.ProfileScreen
 import com.example.minikeep.ui.RegisterScreen
 import com.example.minikeep.ui.theme.MiniKeepTheme
+import com.example.minikeep.viewmodel.CalendarEventViewModel
 import com.example.minikeep.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     private val userViewModel: UserViewModel by viewModels()
+
+    private val calendarEventViewModel: CalendarEventViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,7 +72,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MiniKeepNavigation(userViewModel)
+                    MiniKeepNavigation(userViewModel, calendarEventViewModel)
                 }
             }
         }
@@ -95,7 +98,7 @@ fun GreetingPreview() {
 @SuppressLint("UnrememberedMutableState")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MiniKeepNavigation(userViewModel: UserViewModel) {
+fun MiniKeepNavigation(userViewModel: UserViewModel, calendarEventViewModel: CalendarEventViewModel) {
     val navigationController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -119,7 +122,7 @@ fun MiniKeepNavigation(userViewModel: UserViewModel) {
             composable("form") { FormScreen(navigationController, drawerState) }
             composable("map") { MapScreen(navigationController, drawerState) }
             composable("profile") { ProfileScreen(navigationController, drawerState, userViewModel) }
-            composable("calendar") { CalendarScreen(navigationController, drawerState) }
+            composable("calendar") { CalendarScreen(navigationController, drawerState, calendarEventViewModel, userViewModel) }
         }
     }
 }

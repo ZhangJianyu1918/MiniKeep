@@ -50,6 +50,10 @@ class UserViewModel(application: Application): AndroidViewModel(application) {
         }
     }
 
+    fun googleLogin() {
+        googleSignInClient.signInIntent
+    }
+
     fun login(email: String, password: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val user = userRepository.queryByEmailAndPassword(email, password)

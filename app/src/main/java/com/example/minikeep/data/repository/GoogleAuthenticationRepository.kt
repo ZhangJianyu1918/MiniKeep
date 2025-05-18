@@ -35,6 +35,8 @@ class GoogleAuthenticationRepository(context: Context) {
 //        val accessToken = it.idToken // 或者 requestServerAuthCode 时换 token
 //    }
 
+
+
     fun logout() {
         googleSignInClient.signOut().addOnCompleteListener {
             // 已成功退出

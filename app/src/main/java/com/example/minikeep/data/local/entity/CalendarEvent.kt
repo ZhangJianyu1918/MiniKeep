@@ -5,20 +5,22 @@ import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import java.time.LocalDateTime
 
-//@Entity(tableName = "calendar_event",foreignKeys = [
-//    ForeignKey(
-//        entity = User::class,
-//        parentColumns = ["id"],
-//        childColumns = ["id"],
-//        onDelete = ForeignKey.CASCADE
-//    )
-//])
+@Entity(tableName = "calendar_event",foreignKeys = [
+    ForeignKey(
+        entity = User::class,
+        parentColumns = ["id"],
+        childColumns = ["userId"],
+        onDelete = ForeignKey.CASCADE
+    )
+])
 data class CalendarEvent(
-//    @PrimaryKey val id: Int,
-    val id: String,
+    @PrimaryKey(autoGenerate = true)
+    val id: Int,
+    val userId:  Int,
     val summary: String,
-    val start: LocalDateTime,
-    val end: LocalDateTime
+    val start: String,
+    val end: String,
+    val isFinished: Boolean
 )
 
 

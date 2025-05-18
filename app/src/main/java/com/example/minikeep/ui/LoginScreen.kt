@@ -70,6 +70,7 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
 
     LaunchedEffect(loginUser) {
         if (loginUser != null) {
+            println(loginUser?.email)
             navController.navigate("home") {
                 popUpTo("login") { inclusive = true }
             }
@@ -99,9 +100,6 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
                     .addOnCompleteListener() { authResult ->
                         if (authResult.isSuccessful) {
                             val user = Firebase.auth.currentUser
-                        }
-                        else {
-                            // failure
                         }
                     }
             } catch (e: Exception) {
