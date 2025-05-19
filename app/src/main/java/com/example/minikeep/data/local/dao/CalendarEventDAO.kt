@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CalendarEventDAO {
 
-    @Query("select * from calendar_event where id = :userId")
+    @Query("select * from calendar_event where userId = :userId")
     fun getAllCalendarEventByUserId(userId: Int): Flow<List<CalendarEvent>>
 
     @Insert

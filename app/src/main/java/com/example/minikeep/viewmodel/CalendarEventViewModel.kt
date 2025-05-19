@@ -6,6 +6,7 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.minikeep.data.local.entity.CalendarEvent
@@ -24,6 +25,9 @@ import com.google.api.services.calendar.model.EventDateTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -33,9 +37,22 @@ class CalendarEventViewModel(application: Application): AndroidViewModel(applica
 
     private val calendarEventRepository: CalendarEventRepository = CalendarEventRepository(application)
 
+    private val _events = MutableStateFlow<List<CalendarEvent>>(emptyList())
+    val events: StateFlow<List<CalendarEvent>> = _events
+
+    fun observeCalendarEvents(userId: Int) {
+        viewModelScope.launch {
+            calendarEventRepository.getAllCalendarEvents(userId).collectLatest {
+                _events.value = it
+            }
+        }
+    }
+
     fun getAllCalendarEventByUserId(userId: Int): Flow<List<CalendarEvent>> {
+        println(userId)
         return calendarEventRepository.getAllCalendarEvents(userId)
     }
+
 
     fun insertCalendarEvent(calendarEvent: CalendarEvent) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -84,13 +101,31 @@ class CalendarEventViewModel(application: Application): AndroidViewModel(applica
                     ?.setOrderBy("startTime")
                     ?.setSingleEvents(true)
                     ?.execute()
+//                val calendarEvents = events?.items?.mapNotNull { event ->
+//                    val startDateTime = event.start?.dateTime?.value?.let {
+//                        Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDateTime()
+//                    } ?: return@mapNotNull null
+//                    val endDateTime = event.end?.dateTime?.value?.let {
+//                        Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDateTime()
+//                    } ?: return@mapNotNull null
+//                    CalendarEvent(
+//                        summary = event.summary ?: "No Title",
+//                        start = startDateTime.toString(),
+//                        end = endDateTime.toString(),
+//                        isFinished = true,
+//                        userId = 1,
+//                        id = 1
+//                    )
+//                } ?: emptyList()
                 val calendarEvents = events?.items?.mapNotNull { event ->
-                    val startDateTime = event.start?.dateTime?.value?.let {
-                        Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDateTime()
-                    } ?: return@mapNotNull null
-                    val endDateTime = event.end?.dateTime?.value?.let {
-                        Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDateTime()
-                    } ?: return@mapNotNull null
+                    val start = event.start?.dateTime ?: event.start?.date
+                    val end = event.end?.dateTime ?: event.end?.date
+
+                    if (start == null || end == null) return@mapNotNull null
+
+                    val startDateTime = Instant.ofEpochMilli(start.value).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                    val endDateTime = Instant.ofEpochMilli(end.value).atZone(ZoneId.systemDefault()).toLocalDateTime()
+
                     CalendarEvent(
                         summary = event.summary ?: "No Title",
                         start = startDateTime.toString(),
@@ -144,15 +179,17 @@ class CalendarEventViewModel(application: Application): AndroidViewModel(applica
                             .setSummary(eventTitle)
                             .setStart(EventDateTime().setDate(DateTime(eventBeginDate)))
                             .setEnd(EventDateTime().setDate(DateTime(eventEndDate)))
+//                            .setStart(EventDateTime().setDateTime(DateTime(eventBeginDate)))
+//                            .setEnd(EventDateTime().setDateTime(DateTime(eventEndDate)))
                     )?.execute()
-                    println("InsertEvent 插入事件成功")
+                    println("InsertEvent Successfully")
                 }
             }
             catch (e: Exception) {
                 e.printStackTrace()
                 withContext(context = Dispatchers.Main) {
-                    Log.e("InsertEvent", "插入事件失败：${e.message}")
-                    Toast.makeText(context, "插入事件失败：${e.message}", Toast.LENGTH_LONG).show()
+                    Log.e("InsertEvent", "Insert Fail：${e.message}")
+                    Toast.makeText(context, "Insert Fail：${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
