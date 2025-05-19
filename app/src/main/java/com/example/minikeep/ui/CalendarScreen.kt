@@ -4,6 +4,7 @@ package com.example.minikeep.ui
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
+import android.app.TimePickerDialog
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -20,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +48,8 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.collectLatest
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
@@ -100,6 +104,8 @@ fun CalendarScreen(
         }
     }
     var service: Calendar
+    var eventBeginDateTime by remember { mutableStateOf(LocalDateTime.now()) }
+    var eventEndDateTime by remember { mutableStateOf(LocalDateTime.now().plusHours(1)) }
 
     LaunchedEffect(userViewModel.loginUser) {
         if (userViewModel.loginUser.value == null && Firebase.auth.currentUser == null) {
@@ -158,7 +164,7 @@ fun CalendarScreen(
                 )
             }
         },
-        floatingActionButtonPosition = FabPosition.Start
+        floatingActionButtonPosition = FabPosition.End
     ) { padding ->
         Column(
             modifier = Modifier
@@ -168,13 +174,11 @@ fun CalendarScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 显示月份标题
             Text(
                 text = currentMonth.month.getDisplayName(TextStyle.FULL, Locale.UK) + " ${currentMonth.year}",
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            // 显示星期标题
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -189,19 +193,14 @@ fun CalendarScreen(
                 }
             }
             LazyVerticalGrid(
-                columns = GridCells.Fixed(7), // 7 列代表一周
+                columns = GridCells.Fixed(7),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // 填充月初的空位
                 items(firstDayOffset) {
-                    Box(modifier = Modifier.size(48.dp)) // 空位占位符
+                    Box(modifier = Modifier.size(48.dp))
                 }
-
-                // 填充日期
                 items(daysInMonth) { dayIndex ->
                     val date = firstDayOfMonth.plusDays(dayIndex.toLong())
-
-//                    val hasEvent = events.any { it.start == date }
                     val hasEvent = false
                     CalendarDay(
                         day = date.dayOfMonth,
@@ -211,8 +210,6 @@ fun CalendarScreen(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-
-            // 添加 LazyColumn 显示事件列表
             Text(
                 text = "Events",
                 style = MaterialTheme.typography.headlineSmall,
@@ -249,6 +246,21 @@ fun CalendarScreen(
                             label = { Text("Event Date (YYYY-MM-DD)") },
                             modifier = Modifier.fillMaxWidth()
                         )
+//                        DatePickerField(
+//                            label = "Start Date",
+//                            selectedDate = eventBeginDate,
+//                            onDateSelected = { eventBeginDate = it }
+//                        )
+//
+//                        Spacer(modifier = Modifier.height(16.dp))
+//
+//                        DatePickerField(
+//                            label = "End Date",
+//                            selectedDate = eventEndDate,
+//                            onDateSelected = { eventEndDate = it }
+//                        )
+//
+//                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 },
                 confirmButton = {
@@ -364,6 +376,50 @@ fun CalendarDay(day: Int, hasEvent: Boolean, isToday: Boolean) {
         }
     }
 }
+
+@SuppressLint("DefaultLocale")
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DatePickerField(
+    label: String,
+    selectedDate: String,
+    onDateSelected: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val calendar = android.icu.util.Calendar.getInstance()
+    val year = calendar.get(android.icu.util.Calendar.YEAR)
+    val month = calendar.get(android.icu.util.Calendar.MONTH)
+    val day = calendar.get(android.icu.util.Calendar.DAY_OF_MONTH)
+
+    var showDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        android.app.DatePickerDialog(
+            context,
+            { _, pickedYear, pickedMonth, pickedDay ->
+                val pickedDate =
+                    String.format("%04d-%02d-%02d", pickedYear, pickedMonth + 1, pickedDay)
+                onDateSelected(pickedDate)
+                showDialog = false
+            },
+            year, month, day
+        ).show()
+    }
+
+    OutlinedTextField(
+        value = selectedDate,
+        onValueChange = {}, // 不允许手动编辑
+        label = { Text(label) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showDialog = true },
+        readOnly = true,
+        trailingIcon = {
+            Icon(Icons.Default.DateRange, contentDescription = "Pick date")
+        }
+    )
+}
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
