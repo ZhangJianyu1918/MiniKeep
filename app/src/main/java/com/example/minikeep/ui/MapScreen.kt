@@ -9,10 +9,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.minikeep.viewmodel.UserViewModel
 import com.google.accompanist.permissions.*
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import com.google.maps.android.compose.*
 import kotlin.math.*
 import java.text.SimpleDateFormat
@@ -21,7 +24,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @SuppressLint("MissingPermission")
 @Composable
-fun MapScreen(navController: NavController, drawerState: DrawerState) {
+fun MapScreen(navController: NavController, drawerState: DrawerState, userViewModel: UserViewModel) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
@@ -47,6 +50,17 @@ fun MapScreen(navController: NavController, drawerState: DrawerState) {
     var selectedPoint by remember { mutableStateOf<LatLng?>(null) }
     var distanceText by remember { mutableStateOf("") }
     var isInsideGeofence by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Firebase.auth.currentUser) {
+        if (Firebase.auth.currentUser == null) {
+            navController.navigate("login")
+        }
+    }
+    LaunchedEffect(userViewModel.loginUser) {
+        if (userViewModel.loginUser == null) {
+            navController.navigate("login")
+        }
+    }
 
     fun haversineDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val R = 6371e3 // Earth radius in meters

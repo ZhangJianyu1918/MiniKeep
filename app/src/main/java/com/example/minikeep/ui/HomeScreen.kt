@@ -1,52 +1,67 @@
 package com.example.minikeep.ui
 
+import android.annotation.SuppressLint
+import android.app.Application
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import android.content.Context
-import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.minikeep.R
-import com.example.minikeep.ui.theme.onPrimaryLight
-import com.example.minikeep.ui.theme.primaryLight
-import com.example.minikeep.ui.theme.secondaryDark
+import com.example.minikeep.data.local.entity.UserDetail
+import com.example.minikeep.viewmodel.UserDetailViewModel
+import com.example.minikeep.viewmodel.UserViewModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+@SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController, drawerState: DrawerState) {
+fun HomeScreen(
+    navController: NavController,
+    drawerState: DrawerState,
+    userViewModel: UserViewModel,
+    userDetailViewModel: UserDetailViewModel
+) {
     val coroutineScope = rememberCoroutineScope()
     val currentUser = Firebase.auth.currentUser
     val userName = currentUser?.displayName ?: currentUser?.email ?: "User"
+    var userDetailState by remember { mutableStateOf<UserDetail?>(null) }
+
+    LaunchedEffect(currentUser?.email) {
+        if (currentUser != null) {
+            val result = userDetailViewModel.queryUserDetailFromCloudDatabase()
+            userDetailState = result
+        }
+    }
+
+    LaunchedEffect(userViewModel.loginUser) {
+        if (userViewModel.loginUser == null) {
+            navController.navigate("login")
+        }
+    }
+    LaunchedEffect(currentUser) {
+        if (currentUser == null) {
+            navController.navigate("login")
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -68,7 +83,7 @@ fun HomeScreen(navController: NavController, drawerState: DrawerState) {
             CheckBoxList("Today Workout Plan")
             CheckBoxList("Today Diet Plan")
 
-            FormResultCard()
+            FormResultCard(userDetailState)
 
         }
     }
@@ -186,5 +201,8 @@ fun MiniKeepTopBar(
 fun HomeScreenPreview() {
     val navController = androidx.navigation.compose.rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    HomeScreen(navController, drawerState)
+    val application = Application()
+    val userViewModel = UserViewModel(application)
+    val userDetailViewModel = UserDetailViewModel(application)
+    HomeScreen(navController, drawerState, userViewModel, userDetailViewModel)
 }

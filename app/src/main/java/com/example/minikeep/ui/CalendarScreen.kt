@@ -42,6 +42,8 @@ import com.example.minikeep.viewmodel.CalendarEventViewModel
 import com.example.minikeep.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.api.services.calendar.Calendar
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.collectLatest
 import java.time.LocalDate
 import java.time.YearMonth
@@ -98,6 +100,18 @@ fun CalendarScreen(
         }
     }
     var service: Calendar
+
+    LaunchedEffect(Firebase.auth.currentUser) {
+        if (Firebase.auth.currentUser == null) {
+            navController.navigate("login")
+        }
+    }
+    LaunchedEffect(currentUser) {
+        if (currentUser == null) {
+            navController.navigate("login")
+        }
+    }
+
     LaunchedEffect(account) {
         account?.let {
             service = calendarEventViewModel.getCalendarService(context, it)

@@ -134,11 +134,11 @@ fun MiniKeepNavigation(userViewModel: UserViewModel, userDetailViewModel: UserDe
         }
     ) {
         NavHost(navController = navigationController, startDestination = "login") {
-            composable("home") { HomeScreen(navigationController, drawerState) }
+            composable("home") { HomeScreen(navigationController, drawerState, userViewModel, userDetailViewModel) }
             composable("login") { LoginScreen(navigationController, drawerState, userViewModel) }
             composable("register") { RegisterScreen(navigationController, drawerState, userViewModel) }
             composable("form") { FormScreen(navigationController, drawerState, userDetailViewModel, userViewModel) }
-            composable("map") { MapScreen(navigationController, drawerState) }
+            composable("map") { MapScreen(navigationController, drawerState, userViewModel) }
             composable("profile") { ProfileScreen(navigationController, drawerState, userViewModel) }
             composable("calendar") { CalendarScreen(navigationController, drawerState, calendarEventViewModel, userViewModel) }
         }

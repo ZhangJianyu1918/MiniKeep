@@ -13,12 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
@@ -31,16 +29,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,14 +48,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.minikeep.data.local.entity.User
 import com.example.minikeep.viewmodel.UserDetailViewModel
 import com.example.minikeep.viewmodel.UserViewModel
 import com.example.minikeep.data.local.entity.UserDetail
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.util.Calendar
@@ -94,6 +87,17 @@ fun FormScreen(navController: NavController, drawerState: DrawerState, userDetai
 
     val isHeightValid = height.isNotEmpty() && (height.toIntOrNull() !in 30..300)
     val isWeightValid = weight.isNotEmpty() && (weight.toIntOrNull() !in 30..300)
+
+    LaunchedEffect(Firebase.auth.currentUser) {
+        if (Firebase.auth.currentUser == null) {
+            navController.navigate("login")
+        }
+    }
+    LaunchedEffect(userViewModel.loginUser) {
+        if (userViewModel.loginUser == null) {
+            navController.navigate("login")
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -314,7 +318,7 @@ fun FormScreen(navController: NavController, drawerState: DrawerState, userDetai
 
 
 @Composable
-fun FormResultCard() {
+fun FormResultCard(userDetail: UserDetail?) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         shape = MaterialTheme.shapes.medium,
@@ -347,7 +351,7 @@ fun FormResultCard() {
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
-                text = "Recommend Diet plan: ",
+                text = "Recommend Diet plan: " + userDetail?.goal,
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
