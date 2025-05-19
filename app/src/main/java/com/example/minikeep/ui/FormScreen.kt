@@ -2,6 +2,7 @@ package com.example.minikeep.ui
 
 import android.os.Build
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,12 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
@@ -30,16 +29,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,10 +44,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import kotlinx.coroutines.launch
+import com.example.minikeep.viewmodel.UserDetailViewModel
+import com.example.minikeep.viewmodel.UserViewModel
+import com.example.minikeep.data.local.entity.UserDetail
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.util.Calendar
@@ -60,10 +62,12 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun FormScreen(navController: NavController, drawerState: DrawerState) {
+fun FormScreen(navController: NavController, drawerState: DrawerState, userDetailViewModel: UserDetailViewModel, userViewModel: UserViewModel) {
     val calendar = Calendar.getInstance()
     val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
 
     var date by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -83,6 +87,12 @@ fun FormScreen(navController: NavController, drawerState: DrawerState) {
 
     val isHeightValid = height.isNotEmpty() && (height.toIntOrNull() !in 30..300)
     val isWeightValid = weight.isNotEmpty() && (weight.toIntOrNull() !in 30..300)
+
+    LaunchedEffect(userViewModel.loginUser) {
+        if (userViewModel.loginUser.value == null && Firebase.auth.currentUser == null) {
+            navController.navigate("login")
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -246,7 +256,48 @@ fun FormScreen(navController: NavController, drawerState: DrawerState) {
             }
             item {
                 Button(
-                    onClick = ({}),
+                    onClick = {
+                        val currentUserId = userViewModel.loginUser.value?.id
+                        val heightValue = height.toIntOrNull()
+                        val weightValue = weight.toFloatOrNull()
+
+                        if (
+                            (currentUserId != null || Firebase.auth.currentUser != null)  &&
+                            heightValue != null && heightValue in 30..300 &&
+                            weightValue != null && weightValue in 30f..300f &&
+                            date.isNotBlank() && gender.isNotBlank() && fitnessGoal.isNotBlank()
+                        ) {
+                            val userDetail: UserDetail
+                            if (Firebase.auth.currentUser != null) {
+                                 userDetail = UserDetail(
+                                    -1,
+                                    age = 0,
+                                    height = heightValue,
+                                    weight = weightValue,
+                                    birthday = date,
+                                    gender = gender,
+                                    goal = fitnessGoal
+                                )
+                                userDetailViewModel.insertUserDetailIntoCloudDatabase(userDetail)
+                            } else if (currentUserId != null) {
+                                userDetail = UserDetail(
+                                    userId = currentUserId,
+                                    age = 0,
+                                    height = heightValue,
+                                    weight = weightValue,
+                                    birthday = date,
+                                    gender = gender,
+                                    goal = fitnessGoal
+                                )
+                                userDetailViewModel.upsertUserDetail(userDetail)
+                            }
+                            Toast.makeText(context, "Profile saved!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Please login and fill all fields", Toast.LENGTH_SHORT).show()
+                        }
+
+
+                    },
                     modifier = Modifier.fillMaxWidth().padding(16.dp)
                 ) {
                     Text("Submit")
@@ -262,7 +313,7 @@ fun FormScreen(navController: NavController, drawerState: DrawerState) {
 
 
 @Composable
-fun FormResultCard() {
+fun FormResultCard(userDetail: UserDetail?) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         shape = MaterialTheme.shapes.medium,
@@ -295,7 +346,7 @@ fun FormResultCard() {
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
-                text = "Recommend Diet plan: ",
+                text = "Recommend Diet plan: " + userDetail?.goal,
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(

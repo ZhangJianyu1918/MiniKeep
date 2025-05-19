@@ -19,3 +19,19 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Firebase Firestore
+-keep class com.google.firebase.firestore.** { *; }
+-dontwarn com.google.firebase.firestore.**
+
+# Google Tasks
+-keep class com.google.android.gms.tasks.** { *; }
+-dontwarn com.google.android.gms.tasks.**
+
+# gRPC core
+-keep class io.grpc.** { *; }
+-dontwarn io.grpc.**
+
+# gRPC internal classes that might be required
+-keep class io.grpc.internal.** { *; }
+-dontwarn io.grpc.internal.**

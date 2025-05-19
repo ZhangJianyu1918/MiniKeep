@@ -52,12 +52,20 @@ import com.example.minikeep.ui.MapScreen
 import com.example.minikeep.ui.ProfileScreen
 import com.example.minikeep.ui.RegisterScreen
 import com.example.minikeep.ui.theme.MiniKeepTheme
+import com.example.minikeep.viewmodel.CalendarEventViewModel
 import com.example.minikeep.viewmodel.UserViewModel
+import com.example.minikeep.viewmodel.UserDetailViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     private val userViewModel: UserViewModel by viewModels()
+
+    private val calendarEventViewModel: CalendarEventViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,7 +77,20 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MiniKeepNavigation(userViewModel)
+
+                    val userDetailViewModel: UserDetailViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return UserDetailViewModel(application) as T
+                            }
+                        }
+                    )
+
+                    MiniKeepNavigation(
+                        userViewModel = userViewModel,
+                        userDetailViewModel = userDetailViewModel,
+                        calendarEventViewModel
+                    )
                 }
             }
         }
@@ -95,7 +116,7 @@ fun GreetingPreview() {
 @SuppressLint("UnrememberedMutableState")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MiniKeepNavigation(userViewModel: UserViewModel) {
+fun MiniKeepNavigation(userViewModel: UserViewModel, userDetailViewModel: UserDetailViewModel, calendarEventViewModel: CalendarEventViewModel) {
     val navigationController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -113,13 +134,13 @@ fun MiniKeepNavigation(userViewModel: UserViewModel) {
         }
     ) {
         NavHost(navController = navigationController, startDestination = "login") {
-            composable("home") { HomeScreen(navigationController, drawerState) }
+            composable("home") { HomeScreen(navigationController, drawerState, userViewModel, userDetailViewModel) }
             composable("login") { LoginScreen(navigationController, drawerState, userViewModel) }
             composable("register") { RegisterScreen(navigationController, drawerState, userViewModel) }
-            composable("form") { FormScreen(navigationController, drawerState) }
-            composable("map") { MapScreen(navigationController, drawerState) }
+            composable("form") { FormScreen(navigationController, drawerState, userDetailViewModel, userViewModel) }
+            composable("map") { MapScreen(navigationController, drawerState, userViewModel) }
             composable("profile") { ProfileScreen(navigationController, drawerState, userViewModel) }
-            composable("calendar") { CalendarScreen(navigationController, drawerState) }
+            composable("calendar") { CalendarScreen(navigationController, drawerState, calendarEventViewModel, userViewModel) }
         }
     }
 }
@@ -150,7 +171,7 @@ fun DrawerContent(
         NavigationDrawerItem(
             icon = { menu.icon?.let { Icon(it, contentDescription = null) } },
             label = { Text(menu.title) },
-            selected = false, // 可以根据当前 route 动态设置
+            selected = false,
             onClick = { onMenuClick(menu.route) },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
             colors = NavigationDrawerItemDefaults.colors(

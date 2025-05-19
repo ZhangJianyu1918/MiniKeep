@@ -3,10 +3,9 @@ package com.example.minikeep.ui
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
+import android.app.Application
+import android.app.TimePickerDialog
 import android.os.Build
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,9 +21,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,26 +40,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.minikeep.data.local.entity.CalendarEvent
+import com.example.minikeep.viewmodel.CalendarEventViewModel
+import com.example.minikeep.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
-import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
-import com.google.api.client.http.javanet.NetHttpTransport
-import com.google.api.client.json.gson.GsonFactory
-import com.google.api.client.util.DateTime
-import com.google.api.services.calendar.CalendarScopes
 import com.google.api.services.calendar.Calendar
-import com.google.api.services.calendar.model.Event
-import com.google.api.services.calendar.model.EventDateTime
-import com.google.api.services.calendar.model.Events
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.YearMonth
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -73,7 +67,12 @@ data class MockEvent(
 @SuppressLint("MutableCollectionMutableState")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
+fun CalendarScreen(
+    navController: NavController,
+    drawerState: DrawerState,
+    calendarEventViewModel: CalendarEventViewModel,
+    userViewModel: UserViewModel
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val currentMonth = YearMonth.now()
@@ -84,30 +83,16 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
     var eventTitle by remember { mutableStateOf("") }
     var eventBeginDate by remember { mutableStateOf(LocalDate.now().toString()) }
     var eventEndDate by remember { mutableStateOf(LocalDate.now().toString()) }
-//    var events by remember { mutableStateOf<List<Event>>(emptyList()) }
     var events by remember { mutableStateOf<List<CalendarEvent>>(emptyList()) }
     val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
-
     val account = GoogleSignIn.getLastSignedInAccount(context)
-//    val googleCalendarService = account?.let { getCalendarService(context) }
-//    val authorizationLauncher = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.StartActivityForResult()
-//    ) { result ->
-//        if (result.resultCode == Activity.RESULT_OK) {
-//            // 用户已授权，重新尝试获取事件
-//            account?.let {
-//                fetchCalendarEvents(context, it, onResult = { events = it }, onNeedAuthorization = { })
-//            }
-//        } else {
-//            Toast.makeText(context, "日历授权被拒绝", Toast.LENGTH_SHORT).show()
-//        }
-//    }
+    val currentUser by userViewModel.loginUser.collectAsState()
     val authorizationLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             account?.let {
-                fetchCalendarEvents(
+                calendarEventViewModel.fetchCalendarEvents(
                     context = context,
                     account = it,
                     onResult = { fetchedEvents -> events = fetchedEvents },
@@ -117,14 +102,22 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
                 )
             }
         } else {
-            Toast.makeText(context, "日历授权被拒绝", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Calender authorization is refused", Toast.LENGTH_SHORT).show()
         }
     }
     var service: Calendar
+    var errorMessage by remember { mutableStateOf("") }
+
+    LaunchedEffect(userViewModel.loginUser) {
+        if (userViewModel.loginUser.value == null && Firebase.auth.currentUser == null) {
+            navController.navigate("login")
+        }
+    }
+
     LaunchedEffect(account) {
         account?.let {
-            service = getCalendarService(context, it)
-            fetchCalendarEvents(
+            service = calendarEventViewModel.getCalendarService(context, it)
+            calendarEventViewModel.fetchCalendarEvents(
                 context = context,
                 account = it,
                 onResult = { fetchedEvents -> events = fetchedEvents },
@@ -134,6 +127,23 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
             )
         }
     }
+
+    var localEvents by remember { mutableStateOf<List<CalendarEvent>>(emptyList()) }
+    var job by remember { mutableStateOf<Job?>(null) }
+
+    LaunchedEffect(currentUser) {
+        job?.cancel()
+        currentUser?.let {
+            job = coroutineScope.launch {
+                calendarEventViewModel.getAllCalendarEventByUserId(it.id).collectLatest {
+                    localEvents = it
+                }
+            }
+            println()
+        }
+    }
+
+
 
     Scaffold(
         topBar = {
@@ -164,7 +174,7 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
                 )
             }
         },
-        floatingActionButtonPosition = FabPosition.Start
+        floatingActionButtonPosition = FabPosition.End
     ) { padding ->
         Column(
             modifier = Modifier
@@ -174,13 +184,11 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 显示月份标题
             Text(
                 text = currentMonth.month.getDisplayName(TextStyle.FULL, Locale.UK) + " ${currentMonth.year}",
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            // 显示星期标题
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -195,19 +203,14 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
                 }
             }
             LazyVerticalGrid(
-                columns = GridCells.Fixed(7), // 7 列代表一周
+                columns = GridCells.Fixed(7),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // 填充月初的空位
                 items(firstDayOffset) {
-                    Box(modifier = Modifier.size(48.dp)) // 空位占位符
+                    Box(modifier = Modifier.size(48.dp))
                 }
-
-                // 填充日期
                 items(daysInMonth) { dayIndex ->
                     val date = firstDayOfMonth.plusDays(dayIndex.toLong())
-
-//                    val hasEvent = events.any { it.start == date }
                     val hasEvent = false
                     CalendarDay(
                         day = date.dayOfMonth,
@@ -217,16 +220,20 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-
-            // 添加 LazyColumn 显示事件列表
             Text(
                 text = "Events",
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
             LazyColumn {
-                items(items = events) { event ->
-                    EventCard(event)
+                if (Firebase.auth.currentUser != null) {
+                    items(items = events) { event ->
+                        EventCard(event)
+                    }
+                } else {
+                    items(items = localEvents) { event ->
+                        EventCard(event)
+                    }
                 }
             }
         }
@@ -255,12 +262,41 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
                             label = { Text("Event Date (YYYY-MM-DD)") },
                             modifier = Modifier.fillMaxWidth()
                         )
+                        if (errorMessage.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
+                        }
                     }
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        // TODO 你可以在这里处理添加事件的逻辑
-                       insertEvent(context, account, eventTitle, eventBeginDate, eventEndDate)
+                        // Validation
+                        val dateRegex = Regex("\\d{4}-\\d{2}-\\d{2}")
+                        if (eventTitle.isBlank()) {
+                            errorMessage = "Event title cannot be empty."
+                            return@TextButton
+                        } else if (!eventBeginDate.matches(dateRegex)) {
+                            errorMessage = "Invalid start date format. Use YYYY-MM-DD."
+                            return@TextButton
+                        } else if (!eventEndDate.matches(dateRegex)) {
+                            errorMessage = "Invalid end date format. Use YYYY-MM-DD."
+                            return@TextButton
+                        } else {
+                            try {
+                                val start = LocalDate.parse(eventBeginDate)
+                                val end = LocalDate.parse(eventEndDate)
+                                if (start.isAfter(end)) {
+                                    errorMessage = "Start date must be before or equal to end date."
+                                    return@TextButton
+                                }
+                            } catch (e: Exception) {
+                                errorMessage = "Invalid date value."
+                                return@TextButton
+                            }
+                        }
+                        // All checks passed
+                        errorMessage = ""
+                       calendarEventViewModel.insertEvent(context, account, eventTitle, eventBeginDate, eventEndDate, currentUser)
                         showDialog = false
                     }) {
                         Text("Add")
@@ -372,103 +408,49 @@ fun CalendarDay(day: Int, hasEvent: Boolean, isToday: Boolean) {
     }
 }
 
-fun getCalendarService(context: Context, account: GoogleSignInAccount): Calendar {
-    val credential = GoogleAccountCredential.usingOAuth2(
-        context, listOf(CalendarScopes.CALENDAR)
+@SuppressLint("DefaultLocale")
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DatePickerField(
+    label: String,
+    selectedDate: String,
+    onDateSelected: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val calendar = android.icu.util.Calendar.getInstance()
+    val year = calendar.get(android.icu.util.Calendar.YEAR)
+    val month = calendar.get(android.icu.util.Calendar.MONTH)
+    val day = calendar.get(android.icu.util.Calendar.DAY_OF_MONTH)
+
+    var showDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        android.app.DatePickerDialog(
+            context,
+            { _, pickedYear, pickedMonth, pickedDay ->
+                val pickedDate =
+                    String.format("%04d-%02d-%02d", pickedYear, pickedMonth + 1, pickedDay)
+                onDateSelected(pickedDate)
+                showDialog = false
+            },
+            year, month, day
+        ).show()
+    }
+
+    OutlinedTextField(
+        value = selectedDate,
+        onValueChange = {}, // 不允许手动编辑
+        label = { Text(label) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showDialog = true },
+        readOnly = true,
+        trailingIcon = {
+            Icon(Icons.Default.DateRange, contentDescription = "Pick date")
+        }
     )
-    credential.selectedAccount = account.account
-
-    return Calendar.Builder(
-        NetHttpTransport(),
-        GsonFactory.getDefaultInstance(),
-        credential
-    ).setApplicationName("MiniKeep").build()
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
-fun fetchCalendarEvents(
-    context: Context,
-    account: GoogleSignInAccount,
-//    onResult: (Events?) -> Unit,
-    onResult: (List<CalendarEvent>) -> Unit,
-    onNeedAuthorization: (UserRecoverableAuthIOException) -> Unit
-) {
-    CoroutineScope(Dispatchers.IO).launch {
-        try {
-            val service = getCalendarService(context, account)
-            val now = System.currentTimeMillis()
-            // Set timeMin to 7 days before now
-            val timeMin = DateTime(now - 7 * 24 * 60 * 60 * 1000) // 7 days in milliseconds
-            // Set timeMax to 7 days after now
-            val timeMax = DateTime(now + 7 * 24 * 60 * 60 * 1000) // 7 days in milliseconds
-            val events = service?.events()?.list("primary")
-                ?.setTimeMin(timeMin)
-                ?.setTimeMax(timeMax)
-                ?.setOrderBy("startTime")
-                ?.setSingleEvents(true)
-                ?.execute()
-            val calendarEvents = events?.items?.mapNotNull { event ->
-                val startDateTime = event.start?.dateTime?.value?.let {
-                    Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDateTime()
-                } ?: return@mapNotNull null
-                val endDateTime = event.end?.dateTime?.value?.let {
-                    Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDateTime()
-                } ?: return@mapNotNull null
-                CalendarEvent(
-                    id = event.id ?: "",
-                    summary = event.summary ?: "No Title",
-                    start = startDateTime,
-                    end = endDateTime
-                )
-            } ?: emptyList()
-            println("calendarEvents: $calendarEvents")
-            withContext(Dispatchers.Main) {
-//                onResult(events)
-                onResult(calendarEvents)
-            }
-        } catch (e: UserRecoverableAuthIOException) {
-            // 需要授权，切到主线程执行 launcher
-            withContext(Dispatchers.Main) {
-                onNeedAuthorization(e)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            withContext(Dispatchers.Main) {
-                onResult(emptyList())
-            }
-        }
-    }
-}
-
-fun insertEvent(
-    context: Context,
-    account: GoogleSignInAccount?,
-    eventTitle: String,
-    eventBeginDate: String,
-    eventEndDate: String
-) {
-    CoroutineScope(Dispatchers.IO).launch {
-        try {
-            val service = account?.let { getCalendarService(context, it) }
-            if (service != null) {
-                service.events()?.insert("primary",
-                    Event()
-                        .setSummary(eventTitle)
-                        .setStart(EventDateTime().setDate(DateTime(eventBeginDate)))
-                        .setEnd(EventDateTime().setDate(DateTime(eventEndDate)))
-                )?.execute()
-                println("InsertEvent 插入事件成功")
-            }
-        }
-        catch (e: Exception) {
-            e.printStackTrace()
-            withContext(Dispatchers.Main) {
-                Log.e("InsertEvent", "插入事件失败：${e.message}")
-                Toast.makeText(context, "插入事件失败：${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-}
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
@@ -476,5 +458,8 @@ fun insertEvent(
 fun CalendarScreenPreview() {
     val navController = androidx.navigation.compose.rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    CalendarScreen(navController, drawerState)
+    val application = Application()
+    val calendarEventViewModel = CalendarEventViewModel(application)
+    val userViewModel = UserViewModel(application)
+    CalendarScreen(navController, drawerState, calendarEventViewModel, userViewModel)
 }

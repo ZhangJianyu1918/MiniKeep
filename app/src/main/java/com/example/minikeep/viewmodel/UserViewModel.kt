@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.minikeep.data.local.entity.User
 import com.example.minikeep.data.repository.GoogleAuthenticationRepository
 import com.example.minikeep.data.repository.UserRepository
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,10 +35,20 @@ class UserViewModel(application: Application): AndroidViewModel(application) {
 
     val loginUser: StateFlow<User?> = _loginUser.asStateFlow()
 
+
     fun insertUser(user: User) {
         viewModelScope.launch(Dispatchers.IO) {
             userRepository.insert(user)
         }
+    }
+
+    fun isValidEmail(email: String): Boolean {
+        val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}\$")
+        return emailRegex.matches(email)
+    }
+
+    fun isValidPassword(password: String): Boolean {
+        return password.length >= 6
     }
 
     suspend fun queryUser(id: Int): User {
@@ -50,10 +63,23 @@ class UserViewModel(application: Application): AndroidViewModel(application) {
         }
     }
 
-    fun login(email: String, password: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+    suspend fun login(email: String, password: String): Boolean {
+        return withContext(Dispatchers.IO) {
             val user = userRepository.queryByEmailAndPassword(email, password)
-            _loginUser.value = user
+            if (user != null) {
+                _loginUser.value = user
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch(Dispatchers.Main) {
+            _loginUser.value = null
+            googleSignInClient.signOut()
+            Firebase.auth.signOut()
         }
     }
 
