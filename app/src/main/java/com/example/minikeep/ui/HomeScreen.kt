@@ -183,6 +183,108 @@ fun TodayWorkoutPlanSection() {
     }
 }
 
+@Composable
+fun TodayDietPlanSection() {
+    val context = LocalContext.current
+
+    val meals = listOf("Breakfast", "Lunch", "Dinner")
+    val checkedStates = remember { mutableStateMapOf<String, Boolean>() }
+    val mealInputs = remember { mutableStateMapOf<String, String>() }
+    val isEditing = remember { mutableStateMapOf<String, Boolean>() }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(12.dp))
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Today Diet Plan",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        meals.forEach { meal ->
+            val isChecked = checkedStates[meal] ?: false
+            val inputText = mealInputs[meal] ?: ""
+            val editing = isEditing[meal] ?: true
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isChecked) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = isChecked,
+                            onCheckedChange = {
+                                checkedStates[meal] = it
+                                if (it) {
+                                    Toast.makeText(context, "$meal completed!", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        )
+                        Text(
+                            text = if (isChecked) "$meal ✅" else meal,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        TextButton(onClick = {
+                            // Reset everything
+                            checkedStates[meal] = false
+                            mealInputs[meal] = ""
+                            isEditing[meal] = true
+                        }) {
+                            Text("Reset")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (editing) {
+                        OutlinedTextField(
+                            value = inputText,
+                            onValueChange = { mealInputs[meal] = it },
+                            label = { Text("What do you want to eat?") },
+                            placeholder = { Text("e.g. Toast + Eggs + Milk") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = {
+                            isEditing[meal] = false
+                        }) {
+                            Text("Save")
+                        }
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = inputText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.DarkGray,
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(onClick = {
+                                isEditing[meal] = true
+                            }) {
+                                Text("Edit")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -231,8 +333,7 @@ fun HomeScreen(
         ) {
             GreetingSection(userName = userName)
             TodayWorkoutPlanSection()
-            CheckBoxList("Today Diet Plan")
-
+            TodayDietPlanSection()
             FormResultCard(userDetailState)
 
         }
