@@ -30,6 +30,159 @@ import com.example.minikeep.viewmodel.UserViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Tab
+import androidx.compose.foundation.lazy.LazyColumn
+
+data class ExerciseData(
+    val sets: Int = 0,
+    val weightOrTime: String = "",
+    val progress: Float = 0f
+)
+
+@Composable
+fun TodayWorkoutPlanSection() {
+    val categories = listOf("Strength", "Cardio", "Flexibility")
+    var selectedTab by remember { mutableStateOf(0) }
+    val context = LocalContext.current
+
+    val exerciseOptions = mapOf(
+        "Strength" to listOf("Bench Press", "Squat", "Deadlift", "Shoulder Press", "Bicep Curl", "Leg Press"),
+        "Cardio" to listOf("Running", "Cycling", "Treadmill", "Jump Rope", "Rowing Machine"),
+        "Flexibility" to listOf("Yoga", "Stretching", "Pilates", "Barre")
+    )
+
+    val selectedExercises = remember { mutableStateMapOf<String, ExerciseData>() }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(12.dp))
+            .padding(16.dp)
+    ) {
+        Text("Today Workout Plan", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TabRow(selectedTabIndex = selectedTab) {
+            categories.forEachIndexed { index, category ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = { Text(category) }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        val currentCategory = categories[selectedTab]
+        val currentOptions = exerciseOptions[currentCategory] ?: emptyList()
+
+        currentOptions.forEach { exercise ->
+            val isSelected = selectedExercises.containsKey(exercise)
+            val data = selectedExercises[exercise] ?: ExerciseData()
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        if (isSelected) {
+                            selectedExercises.remove(exercise)
+                        } else {
+                            selectedExercises[exercise] = ExerciseData()
+                        }
+                    }
+                    .padding(vertical = 6.dp)
+                    .background(
+                        if (data.progress >= 1f) Color(0xFFE8F5E9) else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = {
+                            if (it) selectedExercises[exercise] = ExerciseData()
+                            else selectedExercises.remove(exercise)
+                        }
+                    )
+                    Text(
+                        text = if (data.progress >= 1f) "$exercise ✅" else exercise,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    if (isSelected) {
+                        TextButton(onClick = {
+                            selectedExercises[exercise] = ExerciseData()
+                        }) {
+                            Text("Reset")
+                        }
+                    }
+                }
+
+                if (isSelected) {
+                    Column(modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)) {
+                        Row {
+                            OutlinedTextField(
+                                value = data.sets.toString(),
+                                onValueChange = {
+                                    val sets = it.toIntOrNull() ?: 0
+                                    selectedExercises[exercise] = data.copy(sets = sets)
+                                },
+                                label = { Text("Sets") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            OutlinedTextField(
+                                value = data.weightOrTime,
+                                onValueChange = {
+                                    selectedExercises[exercise] = data.copy(weightOrTime = it)
+                                },
+                                label = { Text("Weight / Time") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text("Progress: ${(data.progress * 100).toInt()}%")
+                        Slider(
+                            value = data.progress,
+                            onValueChange = {
+                                selectedExercises[exercise] = data.copy(progress = it)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+        }
+
+        if (selectedExercises.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = {
+                Toast.makeText(context, "Template Saved!", Toast.LENGTH_SHORT).show()
+            }) {
+                Text("Save as Template")
+            }
+        }
+    }
+}
+
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,15 +221,16 @@ fun HomeScreen(
                 modifier = Modifier
             )
         },
-        modifier = Modifier.systemBarsPadding() // 支持 Edge-to-Edge
+        modifier = Modifier.systemBarsPadding()
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(padding)
         ) {
             GreetingSection(userName = userName)
-            CheckBoxList("Today Workout Plan")
+            TodayWorkoutPlanSection()
             CheckBoxList("Today Diet Plan")
 
             FormResultCard(userDetailState)
