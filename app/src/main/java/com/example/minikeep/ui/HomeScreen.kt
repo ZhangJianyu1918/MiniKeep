@@ -285,7 +285,6 @@ fun TodayDietPlanSection() {
     }
 }
 
-
 @SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -331,7 +330,7 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(padding)
         ) {
-            GreetingSection(userName = userName)
+            GreetingSection()
             TodayWorkoutPlanSection()
             TodayDietPlanSection()
             FormResultCard(userDetailState)
@@ -339,8 +338,9 @@ fun HomeScreen(
         }
     }
 }
+
 @Composable
-fun GreetingSection(userName: String = "User") {
+fun GreetingSection() {
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
     val greeting = when (hour) {
         in 5..11 -> "Good Morning ☀️"
@@ -350,19 +350,13 @@ fun GreetingSection(userName: String = "User") {
     }
 
     Column(
-
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
     ) {
         Text(
             text = greeting,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = userName,
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground
         )
     }
