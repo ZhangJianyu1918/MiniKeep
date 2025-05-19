@@ -15,7 +15,7 @@ import java.time.LocalDateTime
 ])
 data class CalendarEvent(
     @PrimaryKey(autoGenerate = true)
-    val id: Int,
+    val id: Int = 0,
     val userId:  Int,
     val summary: String,
     val start: String,

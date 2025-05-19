@@ -126,7 +126,13 @@ class CalendarEventViewModel(application: Application): AndroidViewModel(applica
         currentUser: User?
     ) {
         if (currentUser != null) {
-            insertCalendarEvent(CalendarEvent())
+            insertCalendarEvent(CalendarEvent(
+                userId = currentUser.id,
+                summary = eventTitle,
+                start = eventBeginDate,
+                end = eventEndDate,
+                isFinished = false
+            ))
             return
         }
         CoroutineScope(Dispatchers.IO).launch {
