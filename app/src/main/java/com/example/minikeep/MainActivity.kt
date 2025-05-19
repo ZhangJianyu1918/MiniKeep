@@ -53,6 +53,11 @@ import com.example.minikeep.ui.ProfileScreen
 import com.example.minikeep.ui.RegisterScreen
 import com.example.minikeep.ui.theme.MiniKeepTheme
 import com.example.minikeep.viewmodel.UserViewModel
+import com.example.minikeep.viewmodel.UserDetailViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -64,12 +69,25 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+
             MiniKeepTheme(dynamicColor = false) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MiniKeepNavigation(userViewModel)
+
+                    val userDetailViewModel: UserDetailViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return UserDetailViewModel(application) as T
+                            }
+                        }
+                    )
+
+                    MiniKeepNavigation(
+                        userViewModel = userViewModel,
+                        userDetailViewModel = userDetailViewModel
+                    )
                 }
             }
         }
@@ -95,7 +113,7 @@ fun GreetingPreview() {
 @SuppressLint("UnrememberedMutableState")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MiniKeepNavigation(userViewModel: UserViewModel) {
+fun MiniKeepNavigation(userViewModel: UserViewModel, userDetailViewModel: UserDetailViewModel) {
     val navigationController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -116,7 +134,7 @@ fun MiniKeepNavigation(userViewModel: UserViewModel) {
             composable("home") { HomeScreen(navigationController, drawerState) }
             composable("login") { LoginScreen(navigationController, drawerState, userViewModel) }
             composable("register") { RegisterScreen(navigationController, drawerState, userViewModel) }
-            composable("form") { FormScreen(navigationController, drawerState) }
+            composable("form") { FormScreen(navigationController, drawerState, userDetailViewModel, userViewModel) }
             composable("map") { MapScreen(navigationController, drawerState) }
             composable("profile") { ProfileScreen(navigationController, drawerState, userViewModel) }
             composable("calendar") { CalendarScreen(navigationController, drawerState) }

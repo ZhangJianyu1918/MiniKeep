@@ -21,7 +21,13 @@ class UserDetailViewModel(application: Application): AndroidViewModel(applicatio
 
     fun insertUserDetail(userDetail: UserDetail) {
         viewModelScope.launch(Dispatchers.IO) {
-            userDetailRepository.insert(userDetail)
+            userDetailRepository.upsert(userDetail)
         }
     }
+    fun upsertUserDetail(userDetail: UserDetail) {
+        viewModelScope.launch(Dispatchers.IO) {
+            userDetailRepository.upsert(userDetail)
+        }
+    }
+
 }
