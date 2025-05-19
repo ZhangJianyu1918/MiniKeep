@@ -52,6 +52,7 @@ import com.example.minikeep.ui.MapScreen
 import com.example.minikeep.ui.ProfileScreen
 import com.example.minikeep.ui.RegisterScreen
 import com.example.minikeep.ui.theme.MiniKeepTheme
+import com.example.minikeep.viewmodel.CalendarEventViewModel
 import com.example.minikeep.viewmodel.UserViewModel
 import com.example.minikeep.viewmodel.UserDetailViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -64,12 +65,13 @@ class MainActivity : ComponentActivity() {
 
     private val userViewModel: UserViewModel by viewModels()
 
+    private val calendarEventViewModel: CalendarEventViewModel by viewModels()
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-
             MiniKeepTheme(dynamicColor = false) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -86,7 +88,8 @@ class MainActivity : ComponentActivity() {
 
                     MiniKeepNavigation(
                         userViewModel = userViewModel,
-                        userDetailViewModel = userDetailViewModel
+                        userDetailViewModel = userDetailViewModel,
+                        calendarEventViewModel
                     )
                 }
             }
@@ -113,7 +116,7 @@ fun GreetingPreview() {
 @SuppressLint("UnrememberedMutableState")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MiniKeepNavigation(userViewModel: UserViewModel, userDetailViewModel: UserDetailViewModel) {
+fun MiniKeepNavigation(userViewModel: UserViewModel, userDetailViewModel: UserDetailViewModel, calendarEventViewModel: CalendarEventViewModel) {
     val navigationController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -137,7 +140,7 @@ fun MiniKeepNavigation(userViewModel: UserViewModel, userDetailViewModel: UserDe
             composable("form") { FormScreen(navigationController, drawerState, userDetailViewModel, userViewModel) }
             composable("map") { MapScreen(navigationController, drawerState) }
             composable("profile") { ProfileScreen(navigationController, drawerState, userViewModel) }
-            composable("calendar") { CalendarScreen(navigationController, drawerState) }
+            composable("calendar") { CalendarScreen(navigationController, drawerState, calendarEventViewModel, userViewModel) }
         }
     }
 }

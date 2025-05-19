@@ -104,17 +104,10 @@ fun ProfileScreen(
 
             Button(
                 onClick = {
-                    coroutineScope.launch {
-                        try {
-                            userViewModel.googleSignInClient.signOut()
-                            Firebase.auth.signOut()
-                            navController.navigate("login") {
-                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        } catch (e: Exception) {
-                            println(e)
-                        }
+                    userViewModel.logout()
+                    navController.navigate("login") {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        launchSingleTop = true
                     }
                 },
                 modifier = Modifier

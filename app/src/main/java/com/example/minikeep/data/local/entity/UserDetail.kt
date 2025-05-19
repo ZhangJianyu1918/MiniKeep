@@ -14,7 +14,8 @@ import androidx.room.PrimaryKey
     )
 ])
 data class UserDetail(
-    @PrimaryKey @ColumnInfo(name = "user_id") val userId: Int,
+    @PrimaryKey @ColumnInfo(name = "user_id")
+    val userId: Int,
     val age: Int,
     val height: Int,
     val weight: Float,

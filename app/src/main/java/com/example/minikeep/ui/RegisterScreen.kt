@@ -25,6 +25,7 @@ import androidx.navigation.NavController
 import com.example.minikeep.data.local.entity.User
 import com.example.minikeep.viewmodel.UserViewModel
 import androidx.compose.material3.rememberDrawerState
+import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,9 +36,9 @@ fun RegisterScreen(
     userViewModel: UserViewModel
 ) {
     val coroutineScope = rememberCoroutineScope()
-
+    val snackbarHostState  = remember { SnackbarHostState() }
     val loginUser by userViewModel.loginUser.collectAsState()
-
+    val scope = rememberCoroutineScope()
 //    LaunchedEffect(loginUser) {
 //        if (loginUser != null) {
 //            navController.navigate("home") {
@@ -58,6 +59,9 @@ fun RegisterScreen(
                 coroutineScope = coroutineScope,
                 modifier = Modifier
             )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
         },
         modifier = Modifier.systemBarsPadding(),
     ) { padding ->
@@ -92,9 +96,17 @@ fun RegisterScreen(
                         onValueChange = { email = it },
                         label = { Text("Email") },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.large
+                        shape = MaterialTheme.shapes.large,
+                        isError = email.isNotEmpty() && !userViewModel.isValidEmail(email)
                     )
-
+                    if (email.isNotEmpty() && !userViewModel.isValidEmail(email)) {
+                        Text(
+                            text = "Email format is wrong",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.height(12.dp))
 
                     OutlinedTextField(
@@ -109,13 +121,28 @@ fun RegisterScreen(
                             TextButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Text(iconText)
                             }
-                        }
+                        },
+                        isError = password.isNotEmpty() && !userViewModel.isValidPassword(password)
                     )
-
+                    if (password.isNotEmpty() && !userViewModel.isValidPassword(password)) {
+                        Text(
+                            text = "Password length should be over 6.",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
-                        onClick = { userViewModel.insertUser(
+                        onClick = {
+                            if (!userViewModel.isValidEmail(email) || !userViewModel.isValidPassword(password)) {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Your Input is invalid!")
+                                }
+                                return@Button
+                            }
+                            userViewModel.insertUser(
                             User(email = email, password = password)
                         )},
                         modifier = Modifier.fillMaxWidth(),

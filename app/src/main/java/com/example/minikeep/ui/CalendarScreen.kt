@@ -3,10 +3,8 @@ package com.example.minikeep.ui
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
+import android.app.Application
 import android.os.Build
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,6 +23,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,26 +38,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.minikeep.data.local.entity.CalendarEvent
+import com.example.minikeep.viewmodel.CalendarEventViewModel
+import com.example.minikeep.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
-import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
-import com.google.api.client.http.javanet.NetHttpTransport
-import com.google.api.client.json.gson.GsonFactory
-import com.google.api.client.util.DateTime
-import com.google.api.services.calendar.CalendarScopes
 import com.google.api.services.calendar.Calendar
-import com.google.api.services.calendar.model.Event
-import com.google.api.services.calendar.model.EventDateTime
-import com.google.api.services.calendar.model.Events
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.time.Instant
+import kotlinx.coroutines.flow.collectLatest
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -73,7 +59,12 @@ data class MockEvent(
 @SuppressLint("MutableCollectionMutableState")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
+fun CalendarScreen(
+    navController: NavController,
+    drawerState: DrawerState,
+    calendarEventViewModel: CalendarEventViewModel,
+    userViewModel: UserViewModel
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val currentMonth = YearMonth.now()
@@ -84,30 +75,16 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
     var eventTitle by remember { mutableStateOf("") }
     var eventBeginDate by remember { mutableStateOf(LocalDate.now().toString()) }
     var eventEndDate by remember { mutableStateOf(LocalDate.now().toString()) }
-//    var events by remember { mutableStateOf<List<Event>>(emptyList()) }
     var events by remember { mutableStateOf<List<CalendarEvent>>(emptyList()) }
     val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
-
     val account = GoogleSignIn.getLastSignedInAccount(context)
-//    val googleCalendarService = account?.let { getCalendarService(context) }
-//    val authorizationLauncher = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.StartActivityForResult()
-//    ) { result ->
-//        if (result.resultCode == Activity.RESULT_OK) {
-//            // 用户已授权，重新尝试获取事件
-//            account?.let {
-//                fetchCalendarEvents(context, it, onResult = { events = it }, onNeedAuthorization = { })
-//            }
-//        } else {
-//            Toast.makeText(context, "日历授权被拒绝", Toast.LENGTH_SHORT).show()
-//        }
-//    }
+    val currentUser by userViewModel.loginUser.collectAsState()
     val authorizationLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             account?.let {
-                fetchCalendarEvents(
+                calendarEventViewModel.fetchCalendarEvents(
                     context = context,
                     account = it,
                     onResult = { fetchedEvents -> events = fetchedEvents },
@@ -123,8 +100,8 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
     var service: Calendar
     LaunchedEffect(account) {
         account?.let {
-            service = getCalendarService(context, it)
-            fetchCalendarEvents(
+            service = calendarEventViewModel.getCalendarService(context, it)
+            calendarEventViewModel.fetchCalendarEvents(
                 context = context,
                 account = it,
                 onResult = { fetchedEvents -> events = fetchedEvents },
@@ -132,6 +109,14 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
                     authorizationLauncher.launch(exception.intent)
                 }
             )
+        }
+    }
+
+    LaunchedEffect(currentUser) {
+        currentUser?.let {
+            calendarEventViewModel.getAllCalendarEventByUserId(it.id).collectLatest {
+                events = it
+            }
         }
     }
 
@@ -259,8 +244,7 @@ fun CalendarScreen(navController: NavController, drawerState: DrawerState) {
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        // TODO 你可以在这里处理添加事件的逻辑
-                       insertEvent(context, account, eventTitle, eventBeginDate, eventEndDate)
+                       calendarEventViewModel.insertEvent(context, account, eventTitle, eventBeginDate, eventEndDate, currentUser)
                         showDialog = false
                     }) {
                         Text("Add")
@@ -372,109 +356,14 @@ fun CalendarDay(day: Int, hasEvent: Boolean, isToday: Boolean) {
     }
 }
 
-fun getCalendarService(context: Context, account: GoogleSignInAccount): Calendar {
-    val credential = GoogleAccountCredential.usingOAuth2(
-        context, listOf(CalendarScopes.CALENDAR)
-    )
-    credential.selectedAccount = account.account
-
-    return Calendar.Builder(
-        NetHttpTransport(),
-        GsonFactory.getDefaultInstance(),
-        credential
-    ).setApplicationName("MiniKeep").build()
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-fun fetchCalendarEvents(
-    context: Context,
-    account: GoogleSignInAccount,
-//    onResult: (Events?) -> Unit,
-    onResult: (List<CalendarEvent>) -> Unit,
-    onNeedAuthorization: (UserRecoverableAuthIOException) -> Unit
-) {
-    CoroutineScope(Dispatchers.IO).launch {
-        try {
-            val service = getCalendarService(context, account)
-            val now = System.currentTimeMillis()
-            // Set timeMin to 7 days before now
-            val timeMin = DateTime(now - 7 * 24 * 60 * 60 * 1000) // 7 days in milliseconds
-            // Set timeMax to 7 days after now
-            val timeMax = DateTime(now + 7 * 24 * 60 * 60 * 1000) // 7 days in milliseconds
-            val events = service?.events()?.list("primary")
-                ?.setTimeMin(timeMin)
-                ?.setTimeMax(timeMax)
-                ?.setOrderBy("startTime")
-                ?.setSingleEvents(true)
-                ?.execute()
-            val calendarEvents = events?.items?.mapNotNull { event ->
-                val startDateTime = event.start?.dateTime?.value?.let {
-                    Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDateTime()
-                } ?: return@mapNotNull null
-                val endDateTime = event.end?.dateTime?.value?.let {
-                    Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDateTime()
-                } ?: return@mapNotNull null
-                CalendarEvent(
-                    id = event.id ?: "",
-                    summary = event.summary ?: "No Title",
-                    start = startDateTime,
-                    end = endDateTime
-                )
-            } ?: emptyList()
-            println("calendarEvents: $calendarEvents")
-            withContext(Dispatchers.Main) {
-//                onResult(events)
-                onResult(calendarEvents)
-            }
-        } catch (e: UserRecoverableAuthIOException) {
-            // 需要授权，切到主线程执行 launcher
-            withContext(Dispatchers.Main) {
-                onNeedAuthorization(e)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            withContext(Dispatchers.Main) {
-                onResult(emptyList())
-            }
-        }
-    }
-}
-
-fun insertEvent(
-    context: Context,
-    account: GoogleSignInAccount?,
-    eventTitle: String,
-    eventBeginDate: String,
-    eventEndDate: String
-) {
-    CoroutineScope(Dispatchers.IO).launch {
-        try {
-            val service = account?.let { getCalendarService(context, it) }
-            if (service != null) {
-                service.events()?.insert("primary",
-                    Event()
-                        .setSummary(eventTitle)
-                        .setStart(EventDateTime().setDate(DateTime(eventBeginDate)))
-                        .setEnd(EventDateTime().setDate(DateTime(eventEndDate)))
-                )?.execute()
-                println("InsertEvent 插入事件成功")
-            }
-        }
-        catch (e: Exception) {
-            e.printStackTrace()
-            withContext(Dispatchers.Main) {
-                Log.e("InsertEvent", "插入事件失败：${e.message}")
-                Toast.makeText(context, "插入事件失败：${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-}
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
 @Composable
 fun CalendarScreenPreview() {
     val navController = androidx.navigation.compose.rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    CalendarScreen(navController, drawerState)
+    val application = Application()
+    val calendarEventViewModel = CalendarEventViewModel(application)
+    val userViewModel = UserViewModel(application)
+    CalendarScreen(navController, drawerState, calendarEventViewModel, userViewModel)
 }
