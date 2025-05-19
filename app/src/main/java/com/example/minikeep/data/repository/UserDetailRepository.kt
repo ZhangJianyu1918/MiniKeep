@@ -16,4 +16,14 @@ class UserDetailRepository(application: Application) {
     suspend fun insert(userDetail: UserDetail) {
         userDetailDAO.insertUserDetail(userDetail)
     }
+
+    suspend fun upsert(userDetail: UserDetail) {
+        val existing = userDetailDAO.getUserDetailById(userDetail.userId)
+        if (existing == null) {
+            userDetailDAO.insertUserDetail(userDetail)
+        } else {
+            userDetailDAO.updateUserDetail(userDetail)
+        }
+    }
+
 }

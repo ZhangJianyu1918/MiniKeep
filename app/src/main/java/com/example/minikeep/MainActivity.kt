@@ -54,6 +54,11 @@ import com.example.minikeep.ui.RegisterScreen
 import com.example.minikeep.ui.theme.MiniKeepTheme
 import com.example.minikeep.viewmodel.CalendarEventViewModel
 import com.example.minikeep.viewmodel.UserViewModel
+import com.example.minikeep.viewmodel.UserDetailViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -72,7 +77,20 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MiniKeepNavigation(userViewModel, calendarEventViewModel)
+
+                    val userDetailViewModel: UserDetailViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return UserDetailViewModel(application) as T
+                            }
+                        }
+                    )
+
+                    MiniKeepNavigation(
+                        userViewModel = userViewModel,
+                        userDetailViewModel = userDetailViewModel,
+                        calendarEventViewModel
+                    )
                 }
             }
         }
@@ -98,7 +116,7 @@ fun GreetingPreview() {
 @SuppressLint("UnrememberedMutableState")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MiniKeepNavigation(userViewModel: UserViewModel, calendarEventViewModel: CalendarEventViewModel) {
+fun MiniKeepNavigation(userViewModel: UserViewModel, userDetailViewModel: UserDetailViewModel, calendarEventViewModel: CalendarEventViewModel) {
     val navigationController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -119,7 +137,7 @@ fun MiniKeepNavigation(userViewModel: UserViewModel, calendarEventViewModel: Cal
             composable("home") { HomeScreen(navigationController, drawerState) }
             composable("login") { LoginScreen(navigationController, drawerState, userViewModel) }
             composable("register") { RegisterScreen(navigationController, drawerState, userViewModel) }
-            composable("form") { FormScreen(navigationController, drawerState) }
+            composable("form") { FormScreen(navigationController, drawerState, userDetailViewModel, userViewModel) }
             composable("map") { MapScreen(navigationController, drawerState) }
             composable("profile") { ProfileScreen(navigationController, drawerState, userViewModel) }
             composable("calendar") { CalendarScreen(navigationController, drawerState, calendarEventViewModel, userViewModel) }

@@ -2,6 +2,7 @@ package com.example.minikeep.ui
 
 import android.os.Build
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -47,9 +48,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.minikeep.viewmodel.UserDetailViewModel
+import com.example.minikeep.viewmodel.UserViewModel
+import com.example.minikeep.data.local.entity.UserDetail
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -60,10 +66,12 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun FormScreen(navController: NavController, drawerState: DrawerState) {
+fun FormScreen(navController: NavController, drawerState: DrawerState, userDetailViewModel: UserDetailViewModel, userViewModel: UserViewModel) {
     val calendar = Calendar.getInstance()
     val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
 
     var date by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -246,7 +254,36 @@ fun FormScreen(navController: NavController, drawerState: DrawerState) {
             }
             item {
                 Button(
-                    onClick = ({}),
+                    onClick = {
+                        val currentUserId = userViewModel.loginUser.value?.id
+
+                        val heightValue = height.toIntOrNull()
+                        val weightValue = weight.toFloatOrNull()
+
+                        if (
+                            currentUserId != null &&
+                            heightValue != null && heightValue in 30..300 &&
+                            weightValue != null && weightValue in 30f..300f &&
+                            date.isNotBlank() && gender.isNotBlank() && fitnessGoal.isNotBlank()
+                        ) {
+                            val userDetail = UserDetail(
+                                userId = currentUserId,
+                                age = 0,
+                                height = heightValue,
+                                weight = weightValue,
+                                birthday = date,
+                                gender = gender,
+                                goal = fitnessGoal
+                            )
+
+                            userDetailViewModel.upsertUserDetail(userDetail)
+                            Toast.makeText(context, "Profile saved!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Please login and fill all fields", Toast.LENGTH_SHORT).show()
+                        }
+
+
+                    },
                     modifier = Modifier.fillMaxWidth().padding(16.dp)
                 ) {
                     Text("Submit")
