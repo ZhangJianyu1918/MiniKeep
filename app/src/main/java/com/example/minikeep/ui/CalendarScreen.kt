@@ -104,8 +104,7 @@ fun CalendarScreen(
         }
     }
     var service: Calendar
-    var eventBeginDateTime by remember { mutableStateOf(LocalDateTime.now()) }
-    var eventEndDateTime by remember { mutableStateOf(LocalDateTime.now().plusHours(1)) }
+    var errorMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(userViewModel.loginUser) {
         if (userViewModel.loginUser.value == null && Firebase.auth.currentUser == null) {
@@ -246,25 +245,40 @@ fun CalendarScreen(
                             label = { Text("Event Date (YYYY-MM-DD)") },
                             modifier = Modifier.fillMaxWidth()
                         )
-//                        DatePickerField(
-//                            label = "Start Date",
-//                            selectedDate = eventBeginDate,
-//                            onDateSelected = { eventBeginDate = it }
-//                        )
-//
-//                        Spacer(modifier = Modifier.height(16.dp))
-//
-//                        DatePickerField(
-//                            label = "End Date",
-//                            selectedDate = eventEndDate,
-//                            onDateSelected = { eventEndDate = it }
-//                        )
-//
-//                        Spacer(modifier = Modifier.height(8.dp))
+                        if (errorMessage.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
+                        }
                     }
                 },
                 confirmButton = {
                     TextButton(onClick = {
+                        // Validation
+                        val dateRegex = Regex("\\d{4}-\\d{2}-\\d{2}")
+                        if (eventTitle.isBlank()) {
+                            errorMessage = "Event title cannot be empty."
+                            return@TextButton
+                        } else if (!eventBeginDate.matches(dateRegex)) {
+                            errorMessage = "Invalid start date format. Use YYYY-MM-DD."
+                            return@TextButton
+                        } else if (!eventEndDate.matches(dateRegex)) {
+                            errorMessage = "Invalid end date format. Use YYYY-MM-DD."
+                            return@TextButton
+                        } else {
+                            try {
+                                val start = LocalDate.parse(eventBeginDate)
+                                val end = LocalDate.parse(eventEndDate)
+                                if (start.isAfter(end)) {
+                                    errorMessage = "Start date must be before or equal to end date."
+                                    return@TextButton
+                                }
+                            } catch (e: Exception) {
+                                errorMessage = "Invalid date value."
+                                return@TextButton
+                            }
+                        }
+                        // All checks passed
+                        errorMessage = ""
                        calendarEventViewModel.insertEvent(context, account, eventTitle, eventBeginDate, eventEndDate, currentUser)
                         showDialog = false
                     }) {
