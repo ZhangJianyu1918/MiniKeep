@@ -22,7 +22,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -87,7 +87,7 @@ dependencies {
 
 
     // Import the Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
+    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
 
     // When using the BoM, you don't specify versions in Firebase library dependencies
 
@@ -98,7 +98,14 @@ dependencies {
     // See https://firebase.google.com/docs/android/setup#available-libraries
     // For example, add the dependencies for Firebase Authentication and Cloud Firestore
     implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore")
+
+    implementation("io.grpc:grpc-okhttp:1.70.0")
+    implementation("io.grpc:grpc-protobuf-lite:1.70.0")
+    implementation("io.grpc:grpc-stub:1.70.0")
+    implementation("io.grpc:grpc-android:1.70.0")
+
 
     // Google Calendar API
     implementation(libs.google.api.client)
@@ -117,10 +124,8 @@ dependencies {
 
     implementation("com.google.accompanist:accompanist-permissions:0.31.5-beta")
     implementation("com.google.android.gms:play-services-location:21.0.1")
-    implementation(platform("com.google.firebase:firebase-bom:32.7.3"))
-    implementation("com.google.firebase:firebase-auth-ktx")
+//    implementation(platform("com.google.firebase:firebase-bom:32.7.3"))
     implementation("com.google.android.gms:play-services-auth:21.1.1")
-
 
 
 }

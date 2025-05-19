@@ -242,6 +242,7 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
                         onClick = {
                             val signInIntent = userViewModel.googleSignInClient.signInIntent
                             launcher.launch(signInIntent)
+                            navController.navigate("home")
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,

@@ -8,6 +8,7 @@ import com.example.minikeep.data.repository.GoogleAuthenticationRepository
 import com.example.minikeep.data.repository.UserRepository
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +34,7 @@ class UserViewModel(application: Application): AndroidViewModel(application) {
     private var _loginUser = MutableStateFlow<User?>(null)
 
     val loginUser: StateFlow<User?> = _loginUser.asStateFlow()
+
 
     fun insertUser(user: User) {
         viewModelScope.launch(Dispatchers.IO) {

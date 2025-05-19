@@ -53,9 +53,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.minikeep.data.local.entity.User
 import com.example.minikeep.viewmodel.UserDetailViewModel
 import com.example.minikeep.viewmodel.UserViewModel
 import com.example.minikeep.data.local.entity.UserDetail
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -256,27 +259,39 @@ fun FormScreen(navController: NavController, drawerState: DrawerState, userDetai
                 Button(
                     onClick = {
                         val currentUserId = userViewModel.loginUser.value?.id
-
                         val heightValue = height.toIntOrNull()
                         val weightValue = weight.toFloatOrNull()
 
                         if (
-                            currentUserId != null &&
+                            (currentUserId != null || Firebase.auth.currentUser != null)  &&
                             heightValue != null && heightValue in 30..300 &&
                             weightValue != null && weightValue in 30f..300f &&
                             date.isNotBlank() && gender.isNotBlank() && fitnessGoal.isNotBlank()
                         ) {
-                            val userDetail = UserDetail(
-                                userId = currentUserId,
-                                age = 0,
-                                height = heightValue,
-                                weight = weightValue,
-                                birthday = date,
-                                gender = gender,
-                                goal = fitnessGoal
-                            )
-
-                            userDetailViewModel.upsertUserDetail(userDetail)
+                            val userDetail: UserDetail
+                            if (Firebase.auth.currentUser != null) {
+                                 userDetail = UserDetail(
+                                    -1,
+                                    age = 0,
+                                    height = heightValue,
+                                    weight = weightValue,
+                                    birthday = date,
+                                    gender = gender,
+                                    goal = fitnessGoal
+                                )
+                                userDetailViewModel.insertUserDetailIntoCloudDatabase(userDetail)
+                            } else if (currentUserId != null) {
+                                userDetail = UserDetail(
+                                    userId = currentUserId,
+                                    age = 0,
+                                    height = heightValue,
+                                    weight = weightValue,
+                                    birthday = date,
+                                    gender = gender,
+                                    goal = fitnessGoal
+                                )
+                                userDetailViewModel.upsertUserDetail(userDetail)
+                            }
                             Toast.makeText(context, "Profile saved!", Toast.LENGTH_SHORT).show()
                         } else {
                             Toast.makeText(context, "Please login and fill all fields", Toast.LENGTH_SHORT).show()
