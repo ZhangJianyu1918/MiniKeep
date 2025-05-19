@@ -171,7 +171,7 @@ fun DrawerContent(
         NavigationDrawerItem(
             icon = { menu.icon?.let { Icon(it, contentDescription = null) } },
             label = { Text(menu.title) },
-            selected = false, // 可以根据当前 route 动态设置
+            selected = false,
             onClick = { onMenuClick(menu.route) },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
             colors = NavigationDrawerItemDefaults.colors(

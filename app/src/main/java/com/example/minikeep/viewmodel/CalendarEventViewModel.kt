@@ -6,6 +6,7 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.minikeep.data.local.entity.CalendarEvent
@@ -24,6 +25,9 @@ import com.google.api.services.calendar.model.EventDateTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -33,9 +37,22 @@ class CalendarEventViewModel(application: Application): AndroidViewModel(applica
 
     private val calendarEventRepository: CalendarEventRepository = CalendarEventRepository(application)
 
+    private val _events = MutableStateFlow<List<CalendarEvent>>(emptyList())
+    val events: StateFlow<List<CalendarEvent>> = _events
+
+    fun observeCalendarEvents(userId: Int) {
+        viewModelScope.launch {
+            calendarEventRepository.getAllCalendarEvents(userId).collectLatest {
+                _events.value = it
+            }
+        }
+    }
+
     fun getAllCalendarEventByUserId(userId: Int): Flow<List<CalendarEvent>> {
+        println(userId)
         return calendarEventRepository.getAllCalendarEvents(userId)
     }
+
 
     fun insertCalendarEvent(calendarEvent: CalendarEvent) {
         viewModelScope.launch(Dispatchers.IO) {

@@ -46,7 +46,9 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.api.services.calendar.Calendar
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -100,7 +102,7 @@ fun CalendarScreen(
                 )
             }
         } else {
-            Toast.makeText(context, "日历授权被拒绝", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Calender authorization is refused", Toast.LENGTH_SHORT).show()
         }
     }
     var service: Calendar
@@ -126,13 +128,22 @@ fun CalendarScreen(
         }
     }
 
+    var localEvents by remember { mutableStateOf<List<CalendarEvent>>(emptyList()) }
+    var job by remember { mutableStateOf<Job?>(null) }
+
     LaunchedEffect(currentUser) {
+        job?.cancel()
         currentUser?.let {
-            calendarEventViewModel.getAllCalendarEventByUserId(it.id).collectLatest {
-                events = it
+            job = coroutineScope.launch {
+                calendarEventViewModel.getAllCalendarEventByUserId(it.id).collectLatest {
+                    localEvents = it
+                }
             }
+            println()
         }
     }
+
+
 
     Scaffold(
         topBar = {
@@ -215,8 +226,14 @@ fun CalendarScreen(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
             LazyColumn {
-                items(items = events) { event ->
-                    EventCard(event)
+                if (Firebase.auth.currentUser != null) {
+                    items(items = events) { event ->
+                        EventCard(event)
+                    }
+                } else {
+                    items(items = localEvents) { event ->
+                        EventCard(event)
+                    }
                 }
             }
         }
