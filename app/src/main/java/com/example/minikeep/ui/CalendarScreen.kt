@@ -101,13 +101,8 @@ fun CalendarScreen(
     }
     var service: Calendar
 
-    LaunchedEffect(Firebase.auth.currentUser) {
-        if (Firebase.auth.currentUser == null) {
-            navController.navigate("login")
-        }
-    }
-    LaunchedEffect(currentUser) {
-        if (currentUser == null) {
+    LaunchedEffect(userViewModel.loginUser) {
+        if (userViewModel.loginUser.value == null && Firebase.auth.currentUser == null) {
             navController.navigate("login")
         }
     }

@@ -53,15 +53,11 @@ fun HomeScreen(
     }
 
     LaunchedEffect(userViewModel.loginUser) {
-        if (userViewModel.loginUser == null) {
+        if (userViewModel.loginUser.value == null && Firebase.auth.currentUser == null) {
             navController.navigate("login")
         }
     }
-    LaunchedEffect(currentUser) {
-        if (currentUser == null) {
-            navController.navigate("login")
-        }
-    }
+
 
     Scaffold(
         topBar = {

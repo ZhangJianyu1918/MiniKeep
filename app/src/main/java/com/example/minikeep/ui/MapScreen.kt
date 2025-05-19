@@ -51,13 +51,8 @@ fun MapScreen(navController: NavController, drawerState: DrawerState, userViewMo
     var distanceText by remember { mutableStateOf("") }
     var isInsideGeofence by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Firebase.auth.currentUser) {
-        if (Firebase.auth.currentUser == null) {
-            navController.navigate("login")
-        }
-    }
     LaunchedEffect(userViewModel.loginUser) {
-        if (userViewModel.loginUser == null) {
+        if (userViewModel.loginUser.value == null && Firebase.auth.currentUser == null) {
             navController.navigate("login")
         }
     }

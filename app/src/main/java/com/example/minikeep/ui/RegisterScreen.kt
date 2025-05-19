@@ -25,6 +25,8 @@ import androidx.navigation.NavController
 import com.example.minikeep.data.local.entity.User
 import com.example.minikeep.viewmodel.UserViewModel
 import androidx.compose.material3.rememberDrawerState
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 
 
@@ -39,13 +41,11 @@ fun RegisterScreen(
     val snackbarHostState  = remember { SnackbarHostState() }
     val loginUser by userViewModel.loginUser.collectAsState()
     val scope = rememberCoroutineScope()
-//    LaunchedEffect(loginUser) {
-//        if (loginUser != null) {
-//            navController.navigate("home") {
-//                popUpTo("login") { inclusive = true }
-//            }
-//        }
-//    }
+    LaunchedEffect(loginUser) {
+        if (loginUser != null || Firebase.auth.currentUser != null) {
+            navController.navigate("home")
+        }
+    }
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
