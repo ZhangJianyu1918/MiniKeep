@@ -62,6 +62,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.LaunchedEffect
 import com.example.minikeep.viewmodel.UserViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -75,6 +76,12 @@ fun ProfileScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     var showDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Firebase.auth.currentUser) {
+        if (userViewModel.loginUser.value == null && Firebase.auth.currentUser == null) {
+            navController.navigate("login")
+        }
+    }
 
     Scaffold(
         topBar = {

@@ -74,9 +74,7 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
     LaunchedEffect(loginUser) {
         if (loginUser != null) {
             println(loginUser?.email)
-            navController.navigate("home") {
-                popUpTo("login") { inclusive = true }
-            }
+            navController.navigate("home")
         }
     }
 
@@ -87,9 +85,7 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
             println(user?.email)
             println(user?.photoUrl)
 
-            navController.navigate("home") {
-                popUpTo("login") { inclusive = true }
-            }
+            navController.navigate("home")
         }
     }
 
@@ -242,6 +238,7 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
                         onClick = {
                             val signInIntent = userViewModel.googleSignInClient.signInIntent
                             launcher.launch(signInIntent)
+                            navController.navigate("home")
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
