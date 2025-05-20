@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.app.TimePickerDialog
+import android.content.Context
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,9 +42,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.minikeep.data.local.entity.CalendarEvent
+import com.example.minikeep.data.local.entity.User
 import com.example.minikeep.viewmodel.CalendarEventViewModel
 import com.example.minikeep.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.api.services.calendar.Calendar
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -228,11 +232,11 @@ fun CalendarScreen(
             LazyColumn {
                 if (Firebase.auth.currentUser != null) {
                     items(items = events) { event ->
-                        EventCard(event)
+                        EventCard(event, calendarEventViewModel, context, account, currentUser)
                     }
                 } else {
                     items(items = localEvents) { event ->
-                        EventCard(event)
+                        EventCard(event, calendarEventViewModel, context, account, currentUser)
                     }
                 }
             }
@@ -313,7 +317,7 @@ fun CalendarScreen(
 }
 
 @Composable
-fun EventCard(event: CalendarEvent) {
+fun EventCard(event: CalendarEvent, calendarEventViewModel: CalendarEventViewModel, context: Context, account: GoogleSignInAccount?, currentUser: User?) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -342,6 +346,19 @@ fun EventCard(event: CalendarEvent) {
                 text = "End: ${event.end}",
                 style = MaterialTheme.typography.bodySmall
             )
+            Button(
+                onClick = { calendarEventViewModel.deleteEvent(context, account, event, currentUser) },
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete Event"
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Delete")
+            }
         }
     }
 }
@@ -439,7 +456,7 @@ fun DatePickerField(
 
     OutlinedTextField(
         value = selectedDate,
-        onValueChange = {}, // 不允许手动编辑
+        onValueChange = {},
         label = { Text(label) },
         modifier = Modifier
             .fillMaxWidth()

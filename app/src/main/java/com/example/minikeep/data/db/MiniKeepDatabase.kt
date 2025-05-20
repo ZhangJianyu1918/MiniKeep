@@ -11,7 +11,7 @@ import com.example.minikeep.data.local.entity.CalendarEvent
 import com.example.minikeep.data.local.entity.User
 import com.example.minikeep.data.local.entity.UserDetail
 
-@Database(entities = [User::class, UserDetail::class, CalendarEvent::class], version = 2, exportSchema = false)
+@Database(entities = [User::class, UserDetail::class, CalendarEvent::class], version = 4, exportSchema = false)
 abstract class MiniKeepDatabase: RoomDatabase() {
     abstract fun userDao(): UserDAO
     abstract fun userDetailDao(): UserDetailDAO

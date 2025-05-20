@@ -20,7 +20,8 @@ data class CalendarEvent(
     val summary: String,
     val start: String,
     val end: String,
-    val isFinished: Boolean
+    val isFinished: Boolean,
+    val googleEventId: String? = null
 )
 
 

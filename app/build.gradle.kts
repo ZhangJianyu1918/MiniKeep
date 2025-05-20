@@ -106,7 +106,6 @@ dependencies {
     implementation("io.grpc:grpc-stub:1.70.0")
     implementation("io.grpc:grpc-android:1.70.0")
 
-
     // Google Calendar API
     implementation(libs.google.api.client)
     implementation(libs.google.oauth.client.jetty)
