@@ -17,6 +17,11 @@ class UserDetailRepository(application: Application) {
         userDetailDAO.insertUserDetail(userDetail)
     }
 
+    suspend fun getUserDetailByUserId(userId: Int): UserDetail? {
+        return userDetailDAO.getUserDetailById(userId)
+    }
+
+
     suspend fun upsert(userDetail: UserDetail) {
         val existing = userDetailDAO.getUserDetailById(userDetail.userId)
         if (existing == null) {
