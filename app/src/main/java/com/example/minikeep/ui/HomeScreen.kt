@@ -43,6 +43,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Tab
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.runtime.collectAsState
 
 data class ExerciseData(
     val sets: Int = 0,
@@ -299,10 +300,13 @@ fun HomeScreen(
     val userName = currentUser?.displayName ?: currentUser?.email ?: "User"
     var userDetailState by remember { mutableStateOf<UserDetail?>(null) }
 
-    LaunchedEffect(currentUser?.email) {
-        if (currentUser != null) {
-            val result = userDetailViewModel.queryUserDetailFromCloudDatabase()
-            userDetailState = result
+    val currentUserId = userViewModel.loginUser.collectAsState().value?.id
+
+    LaunchedEffect(currentUserId) {
+        if (currentUserId != null) {
+            userDetailViewModel.getUserDetailByUserId(currentUserId) { detail ->
+                userDetailState = detail
+            }
         }
     }
 
@@ -311,7 +315,6 @@ fun HomeScreen(
             navController.navigate("login")
         }
     }
-
 
     Scaffold(
         topBar = {
@@ -333,11 +336,13 @@ fun HomeScreen(
             GreetingSection()
             TodayWorkoutPlanSection()
             TodayDietPlanSection()
-            FormResultCard(userDetailState)
-
+            userDetailState?.let {
+                FormResultCard(it)
+            }
         }
     }
 }
+
 
 @Composable
 fun GreetingSection() {
