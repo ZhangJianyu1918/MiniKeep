@@ -53,6 +53,11 @@ class CalendarEventViewModel(application: Application): AndroidViewModel(applica
         return calendarEventRepository.getAllCalendarEvents(userId)
     }
 
+    fun deleteCalendarEvent(calendarEvent: CalendarEvent) {
+        viewModelScope.launch(Dispatchers.IO) {
+            calendarEventRepository.deleteCalendarEvent(calendarEvent)
+        }
+    }
 
     fun insertCalendarEvent(calendarEvent: CalendarEvent) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -132,7 +137,8 @@ class CalendarEventViewModel(application: Application): AndroidViewModel(applica
                         end = endDateTime.toString(),
                         isFinished = true,
                         userId = 1,
-                        id = 1
+                        id = 1,
+                        googleEventId = event.id ?: return@mapNotNull null
                     )
                 } ?: emptyList()
                 println("calendarEvents: $calendarEvents")
@@ -194,5 +200,36 @@ class CalendarEventViewModel(application: Application): AndroidViewModel(applica
             }
         }
     }
+
+
+    fun deleteEvent(
+        context: Context,
+        account: GoogleSignInAccount?,
+        calendarEvent: CalendarEvent,
+        currentUser: User?
+    ) {
+        if (currentUser != null) {
+            // 如果是本地用户，就删除本地数据库中的事件
+            deleteCalendarEvent(calendarEvent)
+            return
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val service = account?.let { getCalendarService(context, it) }
+                if (service != null) {
+                    service.events().delete("primary", calendarEvent.googleEventId.toString()).execute()
+                    println("DeleteEvent Successfully")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(context = Dispatchers.Main) {
+                    Log.e("DeleteEvent", "Delete Fail：${e.message}")
+                    Toast.makeText(context, "Delete Fail：${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
 
 }

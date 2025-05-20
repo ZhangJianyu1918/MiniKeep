@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class UserDetailViewModel(application: Application): AndroidViewModel(application) {
     private val userDetailRepository: UserDetailRepository
@@ -94,5 +95,14 @@ class UserDetailViewModel(application: Application): AndroidViewModel(applicatio
             userDetailRepository.upsert(userDetail)
         }
     }
+    fun getUserDetailByUserId(userId: Int, onLoaded: (UserDetail?) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val detail = userDetailRepository.getUserDetailByUserId(userId)
+            withContext(Dispatchers.Main) {
+                onLoaded(detail)
+            }
+        }
+    }
+
 
 }

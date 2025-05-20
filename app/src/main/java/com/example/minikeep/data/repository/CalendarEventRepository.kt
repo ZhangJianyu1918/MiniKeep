@@ -24,4 +24,8 @@ class CalendarEventRepository(application: Application) {
     suspend fun updateCalendarEvent(calendarEvent: CalendarEvent) {
         calendarEventDAO.updateCalendarEvent(calendarEvent)
     }
+
+    suspend fun deleteCalendarEvent(calendarEvent: CalendarEvent) {
+        calendarEventDAO.deleteCalendarEvent(calendarEvent)
+    }
 }

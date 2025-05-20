@@ -44,6 +44,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Tab
 import androidx.compose.foundation.lazy.LazyColumn
+
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
@@ -56,7 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.animation.AnimatedVisibility
-
+import androidx.compose.runtime.collectAsState
 
 data class ExerciseData(
     val sets: Int = 0,
@@ -368,9 +369,19 @@ fun HomeScreen(
     var showWorkoutSection by remember { mutableStateOf(false) }
     var showDietSection by remember { mutableStateOf(false) }
 
+
     var userDetailState by remember { mutableStateOf<UserDetail?>(null) }
     LaunchedEffect(currentUser?.email) {
         userDetailState = userDetailViewModel.queryUserDetailFromCloudDatabase()
+
+    val currentUserId = userViewModel.loginUser.collectAsState().value?.id
+
+    LaunchedEffect(currentUserId) {
+        if (currentUserId != null) {
+            userDetailViewModel.getUserDetailByUserId(currentUserId) { detail ->
+                userDetailState = detail
+            }
+        }
     }
 
     LaunchedEffect(userViewModel.loginUser) {
@@ -397,10 +408,12 @@ fun HomeScreen(
                 .padding(padding)
         ) {
             GreetingSection(navController = navController)
+
             PlanCardSection(
                 onWorkoutClick = { showWorkoutSection = !showWorkoutSection },
                 onDietClick = { showDietSection = !showDietSection }
             )
+
             AnimatedVisibility(visible = showWorkoutSection) {
                 TodayWorkoutPlanSection()
             }
@@ -408,11 +421,18 @@ fun HomeScreen(
             AnimatedVisibility(visible = showDietSection) {
                 TodayDietPlanSection()
             }
+            
+            userDetailState?.let {
+                FormResultCard(it)
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
+
             CalendarEntryCard(navController = navController)
         }
     }
 }
+
 
 @Composable
 fun GreetingSection(navController: NavController) {
