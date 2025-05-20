@@ -5,6 +5,7 @@ import android.app.Application
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -28,7 +29,6 @@ import com.example.minikeep.data.local.entity.UserDetail
 import com.example.minikeep.viewmodel.UserDetailViewModel
 import com.example.minikeep.viewmodel.UserViewModel
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -41,8 +41,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.TabRow
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Tab
 import androidx.compose.foundation.lazy.LazyColumn
+
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.layout.ContentScale
+import com.example.minikeep.R
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.runtime.collectAsState
 
 data class ExerciseData(
@@ -53,17 +67,21 @@ data class ExerciseData(
 
 @Composable
 fun TodayWorkoutPlanSection() {
+    val context = LocalContext.current
     val categories = listOf("Strength", "Cardio", "Flexibility")
     var selectedTab by remember { mutableStateOf(0) }
-    val context = LocalContext.current
 
-    val exerciseOptions = mapOf(
-        "Strength" to listOf("Bench Press", "Squat", "Deadlift", "Shoulder Press", "Bicep Curl", "Leg Press"),
-        "Cardio" to listOf("Running", "Cycling", "Treadmill", "Jump Rope", "Rowing Machine"),
-        "Flexibility" to listOf("Yoga", "Stretching", "Pilates", "Barre")
+    val initialOptions = mapOf(
+        "Strength" to listOf("Bench Press", "Squat", "Deadlift"),
+        "Cardio" to listOf("Running", "Cycling", "Jump Rope"),
+        "Flexibility" to listOf("Yoga", "Stretching", "Pilates")
     )
+    val exerciseOptions = remember { mutableStateMapOf<String, List<String>>().apply { putAll(initialOptions) } }
+    val newExerciseInput = remember { mutableStateMapOf<String, String>() }
 
     val selectedExercises = remember { mutableStateMapOf<String, ExerciseData>() }
+    val setsTextMap = remember { mutableStateMapOf<String, String>() }
+    val completedTextMap = remember { mutableStateMapOf<String, String>() }
 
     Column(
         modifier = Modifier
@@ -93,6 +111,12 @@ fun TodayWorkoutPlanSection() {
         currentOptions.forEach { exercise ->
             val isSelected = selectedExercises.containsKey(exercise)
             val data = selectedExercises[exercise] ?: ExerciseData()
+            val setsText = setsTextMap[exercise] ?: ""
+            val completedText = completedTextMap[exercise] ?: ""
+
+            val sets = setsText.toIntOrNull() ?: 0
+            val completed = completedText.toIntOrNull() ?: 0
+            val progress = if (sets > 0) (completed.toFloat() / sets).coerceIn(0f, 1f) else 0f
 
             Column(
                 modifier = Modifier
@@ -106,7 +130,7 @@ fun TodayWorkoutPlanSection() {
                     }
                     .padding(vertical = 6.dp)
                     .background(
-                        if (data.progress >= 1f) Color(0xFFE8F5E9) else Color.Transparent,
+                        if (progress >= 1f) Color(0xFFE8F5E9) else Color.Transparent,
                         shape = RoundedCornerShape(8.dp)
                     )
             ) {
@@ -122,13 +146,15 @@ fun TodayWorkoutPlanSection() {
                         }
                     )
                     Text(
-                        text = if (data.progress >= 1f) "$exercise ✅" else exercise,
+                        text = if (progress >= 1f) "$exercise ✅" else exercise,
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     if (isSelected) {
                         TextButton(onClick = {
                             selectedExercises[exercise] = ExerciseData()
+                            setsTextMap[exercise] = ""
+                            completedTextMap[exercise] = ""
                         }) {
                             Text("Reset")
                         }
@@ -139,38 +165,66 @@ fun TodayWorkoutPlanSection() {
                     Column(modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)) {
                         Row {
                             OutlinedTextField(
-                                value = data.sets.toString(),
+                                value = setsText,
                                 onValueChange = {
-                                    val sets = it.toIntOrNull() ?: 0
-                                    selectedExercises[exercise] = data.copy(sets = sets)
+                                    setsTextMap[exercise] = it.filter { ch -> ch.isDigit() }
+                                    val newSets = it.toIntOrNull() ?: 0
+                                    val currentCompleted = completedTextMap[exercise]?.toIntOrNull() ?: 0
+                                    val newProgress = if (newSets > 0) (currentCompleted.toFloat() / newSets).coerceIn(0f, 1f) else 0f
+                                    selectedExercises[exercise] = data.copy(sets = newSets, progress = newProgress)
                                 },
                                 label = { Text("Sets") },
+                                isError = setsText.isEmpty(),
+                                supportingText = {
+                                    if (setsText.isEmpty()) Text("Required", color = MaterialTheme.colorScheme.error)
+                                },
                                 modifier = Modifier.weight(1f)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             OutlinedTextField(
-                                value = data.weightOrTime,
+                                value = completedText,
                                 onValueChange = {
-                                    selectedExercises[exercise] = data.copy(weightOrTime = it)
+                                    completedTextMap[exercise] = it.filter { ch -> ch.isDigit() }
+                                    val currentSets = setsTextMap[exercise]?.toIntOrNull() ?: 0
+                                    val newCompleted = it.toIntOrNull() ?: 0
+                                    val newProgress = if (currentSets > 0) (newCompleted.toFloat() / currentSets).coerceIn(0f, 1f) else 0f
+                                    selectedExercises[exercise] = data.copy(progress = newProgress)
                                 },
-                                label = { Text("Weight / Time") },
+                                label = { Text("Completed") },
+                                enabled = sets > 0,
                                 modifier = Modifier.weight(1f)
                             )
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
-
-                        Text("Progress: ${(data.progress * 100).toInt()}%")
-                        Slider(
-                            value = data.progress,
-                            onValueChange = {
-                                selectedExercises[exercise] = data.copy(progress = it)
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Text("Progress: ${(progress * 100).toInt()}%")
+                        LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
                     }
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedTextField(
+            value = newExerciseInput[currentCategory] ?: "",
+            onValueChange = { newExerciseInput[currentCategory] = it },
+            label = { Text("Add new exercise") },
+            placeholder = { Text("e.g. Incline Dumbbell Press") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Button(
+            onClick = {
+                val newExercise = newExerciseInput[currentCategory]?.trim().orEmpty()
+                if (newExercise.isNotBlank()) {
+                    val updatedList = (exerciseOptions[currentCategory] ?: emptyList()) + newExercise
+                    exerciseOptions[currentCategory] = updatedList
+                    newExerciseInput[currentCategory] = ""
+                }
+            },
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Text("➕ Add")
         }
 
         if (selectedExercises.isNotEmpty()) {
@@ -183,6 +237,7 @@ fun TodayWorkoutPlanSection() {
         }
     }
 }
+
 
 @Composable
 fun TodayDietPlanSection() {
@@ -224,10 +279,13 @@ fun TodayDietPlanSection() {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
                             checked = isChecked,
+                            enabled = inputText.isNotBlank() && !editing,
                             onCheckedChange = {
-                                checkedStates[meal] = it
-                                if (it) {
-                                    Toast.makeText(context, "$meal completed!", Toast.LENGTH_SHORT).show()
+                                if (inputText.isNotBlank() && !editing) {
+                                    checkedStates[meal] = it
+                                    if (it) {
+                                        Toast.makeText(context, "$meal completed!", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             }
                         )
@@ -249,14 +307,23 @@ fun TodayDietPlanSection() {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     if (editing) {
+                        val placeholderText = when (meal) {
+                            "Breakfast" -> "e.g. Toast / Eggs / Milk"
+                            "Lunch" -> "e.g. Chicken / Rice / Vegetables"
+                            "Dinner" -> "e.g. Salmon / Salad / Soup"
+                            else -> "e.g. Meal contents"
+                        }
+
                         OutlinedTextField(
                             value = inputText,
                             onValueChange = { mealInputs[meal] = it },
                             label = { Text("What do you want to eat?") },
-                            placeholder = { Text("e.g. Toast + Eggs + Milk") },
+                            placeholder = { Text(placeholderText) },
                             modifier = Modifier.fillMaxWidth()
                         )
+
                         Spacer(modifier = Modifier.height(8.dp))
+
                         Button(onClick = {
                             isEditing[meal] = false
                         }) {
@@ -296,9 +363,16 @@ fun HomeScreen(
     userDetailViewModel: UserDetailViewModel
 ) {
     val coroutineScope = rememberCoroutineScope()
+    var showWorkoutSheet by remember { mutableStateOf(false) }
+    var showDietSheet by remember { mutableStateOf(false) }
     val currentUser = Firebase.auth.currentUser
-    val userName = currentUser?.displayName ?: currentUser?.email ?: "User"
+    var showWorkoutSection by remember { mutableStateOf(false) }
+    var showDietSection by remember { mutableStateOf(false) }
+
+
     var userDetailState by remember { mutableStateOf<UserDetail?>(null) }
+    LaunchedEffect(currentUser?.email) {
+        userDetailState = userDetailViewModel.queryUserDetailFromCloudDatabase()
 
     val currentUserId = userViewModel.loginUser.collectAsState().value?.id
 
@@ -333,19 +407,35 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(padding)
         ) {
-            GreetingSection()
-            TodayWorkoutPlanSection()
-            TodayDietPlanSection()
+            GreetingSection(navController = navController)
+
+            PlanCardSection(
+                onWorkoutClick = { showWorkoutSection = !showWorkoutSection },
+                onDietClick = { showDietSection = !showDietSection }
+            )
+
+            AnimatedVisibility(visible = showWorkoutSection) {
+                TodayWorkoutPlanSection()
+            }
+
+            AnimatedVisibility(visible = showDietSection) {
+                TodayDietPlanSection()
+            }
+            
             userDetailState?.let {
                 FormResultCard(it)
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            CalendarEntryCard(navController = navController)
         }
     }
 }
 
 
 @Composable
-fun GreetingSection() {
+fun GreetingSection(navController: NavController) {
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
     val greeting = when (hour) {
         in 5..11 -> "Good Morning ☀️"
@@ -357,26 +447,185 @@ fun GreetingSection() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 16.dp)
     ) {
         Text(
             text = greeting,
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Want to find a gym nearby? Tap the button to explore the map:",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray,
+                modifier = Modifier
+                    .widthIn(max = 250.dp)
+                    .wrapContentHeight()
+            )
+
+            OutlinedButton(
+                onClick = { navController.navigate("map") },
+                border = BorderStroke(1.5.dp, Color(0xFF00C853)),
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFF00C853),
+                    containerColor = Color.Transparent
+                ),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                modifier = Modifier.padding(end = 4.dp)
+            ) {
+                Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Start")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Image(
+            painter = painterResource(id = R.drawable.home),
+            contentDescription = "Home banner",
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .clip(RoundedCornerShape(12.dp)),
+            contentScale = ContentScale.Crop
+        )
     }
 }
 
 @Composable
-fun CheckBoxList(title: String) {
+fun PlanCardSection(
+    onWorkoutClick: () -> Unit,
+    onDietClick: () -> Unit
+) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(16.dp).background(color = MaterialTheme.colorScheme.secondaryContainer)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .background(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(16.dp)
     ) {
-        var checked1 by remember { mutableStateOf(false) }
-        var checked2 by remember { mutableStateOf(false) }
-        Text(text = title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
-        CheckoutBox(false, onCheckedChange = { checked1 = it },"Toast Text1", "Title1", "Description1")
-        CheckoutBox(false, onCheckedChange = { checked2 = it },"Toast Text2", "Title2", "Description2")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "My Plan",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+            Spacer(Modifier.weight(1f))
+            TextButton(onClick = {}) {
+                Text("See all plans")
+                Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onWorkoutClick)
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                modifier = Modifier.size(40.dp)
+            ) {
+                Box(Modifier.fillMaxSize()) {
+                    Text(
+                        "🏋️",
+                        fontSize = 18.sp,
+                        modifier = Modifier.align(Alignment.Center) // ✅ 这里就可以用了
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Text("My Workout Plan", style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.weight(1f))
+            Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null)
+        }
+
+        // Diet 行
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onDietClick)
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                modifier = Modifier.size(40.dp)
+            ) {
+                Box(Modifier.fillMaxSize()) {
+                    Text(
+                        "🏋️",
+                        fontSize = 18.sp,
+                        modifier = Modifier.align(Alignment.Center) // ✅ 这里就可以用了
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Text("My Diet Plan", style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.weight(1f))
+            Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null)
+        }
+    }
+}
+
+@Composable
+fun CalendarEntryCard(navController: NavController) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFFF8E1) // 柔和黄色背景
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "📅 Track your fitness habits",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF795548)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Consistency is the key to progress. Stay on top of your goals by tracking your workouts and meals daily. "
+                        + "Building a habit takes time—your calendar helps you stay motivated and accountable throughout the journey.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.DarkGray
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                Button(
+                    onClick = { navController.navigate("calendar") },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000)),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text("View Calendar", color = Color.White)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.White)
+                }
+            }
+        }
     }
 }
 
