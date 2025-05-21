@@ -63,6 +63,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import com.example.minikeep.R
+import androidx.compose.ui.draw.clip
 import com.example.minikeep.viewmodel.UserViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -103,11 +108,20 @@ fun ProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             WelcomeSection(userName = "User")
-            RecommendFitnessPlan()
+//            RecommendFitnessPlan()
+            Image(
+                painter = painterResource(id = R.drawable.profile),   // profile.jpg 放在 res/drawable
+                contentDescription = "Profile banner",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop
+            )
             NoActivitySection(navController = navController)
+            Spacer(modifier = Modifier.height(12.dp))
             UserDataCard(navController = navController, showDialog = { showDialog = true })
-
-//            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Button(
                 onClick = {
@@ -192,6 +206,7 @@ fun NoActivitySection(navController: NavController) {
     ) {
         Text(
             text = "Explore your workout options!",
+            fontSize = 22.sp,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
