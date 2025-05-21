@@ -63,6 +63,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import com.example.minikeep.R
+import androidx.compose.ui.draw.clip
 import com.example.minikeep.viewmodel.UserViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -76,6 +82,7 @@ fun ProfileScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     var showDialog by remember { mutableStateOf(false) }
+    var showPrivacyDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Firebase.auth.currentUser) {
         if (userViewModel.loginUser.value == null && Firebase.auth.currentUser == null) {
@@ -103,11 +110,25 @@ fun ProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             WelcomeSection(userName = "User")
-            RecommendFitnessPlan()
+//            RecommendFitnessPlan()
+            Image(
+                painter = painterResource(id = R.drawable.profile),
+                contentDescription = "Profile banner",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop
+            )
             NoActivitySection(navController = navController)
-            UserDataCard(navController = navController, showDialog = { showDialog = true })
+            Spacer(modifier = Modifier.height(12.dp))
+            UserDataCard(
+                navController = navController,
+                showDialog = { showDialog = true },
+                showPrivacy = { showPrivacyDialog = true }
+            )
 
-//            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Button(
                 onClick = {
@@ -135,6 +156,10 @@ fun ProfileScreen(
             if (showDialog) {
                 EditProfileDialog(onDismiss = { showDialog = false })
             }
+            if (showPrivacyDialog) {
+                PrivacyDialog(onDismiss = { showPrivacyDialog = false })
+            }
+
         }
     }
 }
@@ -192,6 +217,7 @@ fun NoActivitySection(navController: NavController) {
     ) {
         Text(
             text = "Explore your workout options!",
+            fontSize = 22.sp,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
@@ -222,10 +248,13 @@ fun NoActivitySection(navController: NavController) {
 }
 
 @Composable
-fun UserDataCard(navController: NavController, showDialog: () -> Unit) {
+fun UserDataCard(
+    navController: NavController,
+    showDialog: () -> Unit,
+    showPrivacy: () -> Unit
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-
     var showBasicInfo by remember { mutableStateOf(false) }
     var weight by remember { mutableStateOf("") }
     var height by remember { mutableStateOf("") }
@@ -241,8 +270,6 @@ fun UserDataCard(navController: NavController, showDialog: () -> Unit) {
             modifier = Modifier.padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-//            Text("My Data", style = MaterialTheme.typography.titleLarge)
-
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(
@@ -274,7 +301,7 @@ fun UserDataCard(navController: NavController, showDialog: () -> Unit) {
                     navController.navigate("calendar")
                 })
                 IconWithLabel(Icons.Default.Edit, "Edit Profile", onClick = showDialog)
-                IconWithLabel(Icons.Default.Settings, "Settings", onClick = { /* TODO */ })
+                IconWithLabel(Icons.Default.Settings, "Privacy", onClick = showPrivacy)
             }
         }
     }
@@ -300,7 +327,30 @@ fun RecommendFitnessPlan() {
             EventCard(event)
         }
     }
+}
 
+@Composable
+fun PrivacyDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Privacy Policy") },
+        text = {
+            Column(modifier = Modifier.heightIn(min = 100.dp, max = 300.dp)) {
+                Text(
+                    text = "🔐 We value your privacy.\n\n" +
+                            "This app securely stores only the data necessary to help you track your fitness. " +
+                            "Your personal details will never be shared with third parties.\n\n" +
+                            "By using this app, you agree to our data policy. You can request data deletion anytime by contacting support.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
 }
 
 @Composable
@@ -377,7 +427,6 @@ fun IconWithLabel(icon: ImageVector, label: String, onClick: () -> Unit) {
     }
 }
 
-
 @Preview
 @Composable
 fun ProfileScreenPreview() {
@@ -386,4 +435,3 @@ fun ProfileScreenPreview() {
     val userViewModel = UserViewModel(Application())
     ProfileScreen(navController, drawerState, userViewModel)
 }
-
