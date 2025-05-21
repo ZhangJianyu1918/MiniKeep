@@ -7,15 +7,23 @@ import androidx.room.RoomDatabase
 import com.example.minikeep.data.local.dao.CalendarEventDAO
 import com.example.minikeep.data.local.dao.UserDAO
 import com.example.minikeep.data.local.dao.UserDetailDAO
+import com.example.minikeep.data.local.dao.UserDietPlanDAO
+import com.example.minikeep.data.local.dao.WorkoutPlanDAO
 import com.example.minikeep.data.local.entity.CalendarEvent
 import com.example.minikeep.data.local.entity.User
 import com.example.minikeep.data.local.entity.UserDetail
+import com.example.minikeep.data.local.entity.DietPlan
+import com.example.minikeep.data.local.entity.WorkoutPlan
 
-@Database(entities = [User::class, UserDetail::class, CalendarEvent::class], version = 4, exportSchema = false)
+
+@Database(entities = [User::class, UserDetail::class, CalendarEvent::class, DietPlan::class, WorkoutPlan::class], version = 5, exportSchema = false)
 abstract class MiniKeepDatabase: RoomDatabase() {
     abstract fun userDao(): UserDAO
     abstract fun userDetailDao(): UserDetailDAO
     abstract fun calendarEventDao(): CalendarEventDAO
+    abstract fun DietPlanDao(): UserDietPlanDAO
+    abstract fun WorkoutPlanDao(): WorkoutPlanDAO
+
 
     companion object {
         @Volatile

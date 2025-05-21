@@ -34,28 +34,23 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.CardDefaults
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.foundation.clickable
 import androidx.compose.material3.TabRow
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Tab
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.layout.ContentScale
 import com.example.minikeep.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.animation.AnimatedVisibility
+import com.example.minikeep.viewmodel.DietPlanViewModel
+import com.example.minikeep.viewmodel.WorkoutPlanViewModel
 
 
 data class ExerciseData(
@@ -359,7 +354,9 @@ fun HomeScreen(
     navController: NavController,
     drawerState: DrawerState,
     userViewModel: UserViewModel,
-    userDetailViewModel: UserDetailViewModel
+    userDetailViewModel: UserDetailViewModel,
+    dietPlanViewModel: DietPlanViewModel,
+    WorkoutPlanViewModel: WorkoutPlanViewModel
 ) {
     val coroutineScope = rememberCoroutineScope()
     var showWorkoutSheet by remember { mutableStateOf(false) }
@@ -683,5 +680,15 @@ fun HomeScreenPreview() {
     val application = Application()
     val userViewModel = UserViewModel(application)
     val userDetailViewModel = UserDetailViewModel(application)
-    HomeScreen(navController, drawerState, userViewModel, userDetailViewModel)
+    val dietPlanViewModel = DietPlanViewModel(application = Application())
+    val workoutPlanViewModel = WorkoutPlanViewModel(application = Application())
+
+    HomeScreen(
+        navController,
+        drawerState,
+        userViewModel,
+        userDetailViewModel,
+        dietPlanViewModel,
+        workoutPlanViewModel
+    )
 }
