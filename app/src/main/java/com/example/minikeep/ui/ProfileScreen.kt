@@ -69,7 +69,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import com.example.minikeep.R
 import androidx.compose.ui.draw.clip
+import com.example.minikeep.viewmodel.DietPlanViewModel
 import com.example.minikeep.viewmodel.UserViewModel
+import com.example.minikeep.viewmodel.WorkoutPlanViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
@@ -78,7 +80,9 @@ import com.google.firebase.auth.auth
 fun ProfileScreen(
     navController: NavController,
     drawerState: DrawerState,
-    userViewModel: UserViewModel
+    userViewModel: UserViewModel,
+    dietPlanViewModel: DietPlanViewModel,
+    workoutPlanViewModel: WorkoutPlanViewModel
 ) {
     val coroutineScope = rememberCoroutineScope()
     var showDialog by remember { mutableStateOf(false) }
@@ -433,5 +437,13 @@ fun ProfileScreenPreview() {
     val navController = androidx.navigation.compose.rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val userViewModel = UserViewModel(Application())
-    ProfileScreen(navController, drawerState, userViewModel)
+    val dietPlanViewModel = DietPlanViewModel(application = Application())
+    val workoutPlanViewModel = WorkoutPlanViewModel(application = Application())
+    ProfileScreen(
+        navController,
+        drawerState,
+        userViewModel,
+        dietPlanViewModel,
+        workoutPlanViewModel
+    )
 }

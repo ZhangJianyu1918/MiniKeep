@@ -58,6 +58,8 @@ import com.example.minikeep.viewmodel.UserDetailViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.minikeep.viewmodel.DietPlanViewModel
+import com.example.minikeep.viewmodel.WorkoutPlanViewModel
 
 import kotlinx.coroutines.launch
 
@@ -66,6 +68,10 @@ class MainActivity : ComponentActivity() {
     private val userViewModel: UserViewModel by viewModels()
 
     private val calendarEventViewModel: CalendarEventViewModel by viewModels()
+
+    private val dietPlanViewModel: DietPlanViewModel by viewModels()
+
+    private val workoutPlanViewModel: WorkoutPlanViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,7 +95,9 @@ class MainActivity : ComponentActivity() {
                     MiniKeepNavigation(
                         userViewModel = userViewModel,
                         userDetailViewModel = userDetailViewModel,
-                        calendarEventViewModel
+                        calendarEventViewModel,
+                        dietPlanViewModel,
+                        workoutPlanViewModel
                     )
                 }
             }
@@ -116,7 +124,13 @@ fun GreetingPreview() {
 @SuppressLint("UnrememberedMutableState")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MiniKeepNavigation(userViewModel: UserViewModel, userDetailViewModel: UserDetailViewModel, calendarEventViewModel: CalendarEventViewModel) {
+fun MiniKeepNavigation(
+    userViewModel: UserViewModel,
+    userDetailViewModel: UserDetailViewModel,
+    calendarEventViewModel: CalendarEventViewModel,
+    dietPlanViewModel: DietPlanViewModel,
+    workoutPlanViewModel: WorkoutPlanViewModel
+) {
     val navigationController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -134,12 +148,12 @@ fun MiniKeepNavigation(userViewModel: UserViewModel, userDetailViewModel: UserDe
         }
     ) {
         NavHost(navController = navigationController, startDestination = "login") {
-            composable("home") { HomeScreen(navigationController, drawerState, userViewModel, userDetailViewModel) }
+            composable("home") { HomeScreen(navigationController, drawerState, userViewModel, userDetailViewModel, dietPlanViewModel, workoutPlanViewModel) }
             composable("login") { LoginScreen(navigationController, drawerState, userViewModel) }
             composable("register") { RegisterScreen(navigationController, drawerState, userViewModel) }
             composable("form") { FormScreen(navigationController, drawerState, userDetailViewModel, userViewModel) }
             composable("map") { MapScreen(navigationController, drawerState, userViewModel) }
-            composable("profile") { ProfileScreen(navigationController, drawerState, userViewModel) }
+            composable("profile") { ProfileScreen(navigationController, drawerState, userViewModel, dietPlanViewModel, workoutPlanViewModel) }
             composable("calendar") { CalendarScreen(navigationController, drawerState, calendarEventViewModel, userViewModel) }
         }
     }
