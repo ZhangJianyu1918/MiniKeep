@@ -4,6 +4,7 @@ import androidx.room.*
 import com.example.minikeep.data.local.entity.WorkoutPlan
 import kotlinx.coroutines.flow.Flow
 
+@Dao
 interface WorkoutPlanDAO {
     // 插入单条计划
     @Insert(onConflict = OnConflictStrategy.REPLACE)

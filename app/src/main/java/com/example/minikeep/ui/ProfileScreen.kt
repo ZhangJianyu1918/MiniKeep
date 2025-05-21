@@ -227,14 +227,6 @@ fun NoActivitySection(navController: NavController) {
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
-//        Text(
-//            text = "Explore your workout options!",
-//            style = MaterialTheme.typography.bodySmall,
-//            color = MaterialTheme.colorScheme.onSurfaceVariant,
-//            textAlign = TextAlign.Center
-//        )
-//        Spacer(modifier = Modifier.height(16.dp))
-
         OutlinedButton(
             onClick = { navController.navigate("home") },
             shape = RoundedCornerShape(50),
@@ -283,52 +275,24 @@ fun UserDataCard(
                 IconWithLabel(Icons.Default.Edit, "Basic Info", onClick = { navController.navigate("form") })
                 IconWithLabel(Icons.Default.DateRange, "Plan", onClick = { /* TODO */ })
                 IconWithLabel(Icons.Default.List, "Records", onClick = { /* TODO */ })
-                IconWithLabel(Icons.Default.DateRange, "This Week", onClick = {
-                    coroutineScope.launch {
-                        Toast.makeText(context, "This Week: 3 workouts", Toast.LENGTH_SHORT).show()
-                    }
+                IconWithLabel(Icons.Default.DateRange, "Calendar", onClick = {
+                    navController.navigate("calendar")
                 })
             }
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp),
+                horizontalArrangement = Arrangement.Start
             ) {
-                IconWithLabel(Icons.Default.List, "Total", onClick = {
-                    coroutineScope.launch {
-                        Toast.makeText(context, "Total: 120 workouts", Toast.LENGTH_SHORT).show()
-                    }
-                })
-                IconWithLabel(Icons.Default.DateRange, "Calendar", onClick = {
-                    navController.navigate("calendar")
-                })
                 IconWithLabel(Icons.Default.Edit, "Edit Profile", onClick = showDialog)
+                Spacer(modifier = Modifier.width(24.dp))
                 IconWithLabel(Icons.Default.Settings, "Privacy", onClick = showPrivacy)
             }
-        }
-    }
-}
-
-
-@Composable
-fun RecommendFitnessPlan() {
-    val mockEvents = listOf(
-        MockEvent("Back Day", "2025-04-09T10:00:00", "2025-04-09T11:00:00"),
-        MockEvent("Chest Day", "2025-04-11T12:00:00", "2025-04-11T13:00:00")
-    )
-
-    LazyColumn(
-        modifier = Modifier.padding(8.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        item {
-            Text("My Workout Plan", style = MaterialTheme.typography.titleLarge)
-        }
-        items(mockEvents) { event ->
-            EventCard(event)
         }
     }
 }

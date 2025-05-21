@@ -525,7 +525,7 @@ fun PlanCardSection(
             ) {
                 Box(Modifier.fillMaxSize()) {
                     Text(
-                        "🏋️",
+                        "\uD83D\uDEB4️",
                         fontSize = 18.sp,
                         modifier = Modifier.align(Alignment.Center) // ✅ 这里就可以用了
                     )
@@ -552,9 +552,9 @@ fun PlanCardSection(
             ) {
                 Box(Modifier.fillMaxSize()) {
                     Text(
-                        "🏋️",
+                        "\uD83C\uDF71️",
                         fontSize = 18.sp,
-                        modifier = Modifier.align(Alignment.Center) // ✅ 这里就可以用了
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
             }
@@ -574,7 +574,7 @@ fun CalendarEntryCard(navController: NavController) {
             .padding(horizontal = 16.dp, vertical = 12.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFFF8E1) // 柔和黄色背景
+            containerColor = Color(0xFFFFECB3)
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
