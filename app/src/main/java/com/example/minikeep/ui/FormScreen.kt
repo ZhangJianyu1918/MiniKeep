@@ -21,6 +21,8 @@ import androidx.navigation.NavController
 import com.example.minikeep.data.local.entity.UserDetail
 import com.example.minikeep.viewmodel.UserDetailViewModel
 import com.example.minikeep.viewmodel.UserViewModel
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -89,6 +91,15 @@ fun FormScreen(
     var latestUserDetail by remember { mutableStateOf<UserDetail?>(null) }
 
     val currentUserId = userViewModel.loginUser.collectAsState().value?.id
+    val isHeightValid = height.isNotEmpty() && (height.toIntOrNull() !in 30..300)
+    val isWeightValid = weight.toFloatOrNull()?.let { it !in 30f..300f } ?: false
+
+    LaunchedEffect(userViewModel.loginUser) {
+        if (userViewModel.loginUser.value == null && Firebase.auth.currentUser == null) {
+            navController.navigate("login")
+        }
+    }
+
 
     LaunchedEffect(currentUserId) {
         if (currentUserId != null) {
@@ -106,6 +117,24 @@ fun FormScreen(
                     latestUserDetail = detail
                 }
             }
+        } else if (Firebase.auth.currentUser != null) {
+            val newUserDetail = userDetailViewModel.queryUserDetailFromCloudDatabase()
+            if(newUserDetail != null) {
+                height = newUserDetail.height.toString()
+                weight = newUserDetail.weight.toString()
+                date = newUserDetail.birthday
+                gender = newUserDetail.gender
+                fitnessGoal = newUserDetail.goal
+                age = newUserDetail.age
+
+                bmi = calculateBMI(newUserDetail.height, newUserDetail.weight)
+                fat = estimateBodyFatPercentage(newUserDetail.age, newUserDetail.gender, bmi)
+            }
+        }
+    }
+    LaunchedEffect(userViewModel.loginUser) {
+        if (userViewModel.loginUser.value == null && Firebase.auth.currentUser == null) {
+            navController.navigate("login")
         }
     }
 
@@ -126,8 +155,18 @@ fun FormScreen(
                     onValueChange = { height = it },
                     label = { Text("Height (cm)") },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                    isError = isHeightValid
+
                 )
+                if (isHeightValid) {
+                    Text(
+                        text = "Height must be between 30 and 300 cm",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    )
+                }
             }
             item {
                 OutlinedTextField(
@@ -135,8 +174,17 @@ fun FormScreen(
                     onValueChange = { weight = it },
                     label = { Text("Weight (kg)") },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                    isError = isWeightValid
                 )
+                if (isWeightValid) {
+                    Text(
+                        text = "Weight must be between 30 and 300 kg",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    )
+                }
             }
             item {
                 OutlinedTextField(
@@ -240,7 +288,7 @@ fun FormScreen(
                         val weightValue = weight.toFloatOrNull()
 
                         if (
-                            currentUserId != null &&
+                            (currentUserId != null || Firebase.auth.currentUser != null) &&
                             heightValue != null && heightValue in 30..300 &&
                             weightValue != null && weightValue in 30f..300f &&
                             date.isNotBlank() && gender.isNotBlank() && fitnessGoal.isNotBlank()
@@ -249,20 +297,33 @@ fun FormScreen(
                             bmi = calculateBMI(heightValue, weightValue)
                             fat = estimateBodyFatPercentage(age, gender, bmi)
 
-                            val userDetail = UserDetail(
-                                userId = currentUserId,
-                                age = age,
-                                height = heightValue,
-                                weight = weightValue,
-                                birthday = date,
-                                gender = gender,
-                                goal = fitnessGoal
-                            )
-                            userDetailViewModel.upsertUserDetail(userDetail)
-                            latestUserDetail = userDetail
-                            Toast.makeText(context, "Profile saved!", Toast.LENGTH_SHORT).show()
+                            val userDetail: UserDetail
+                            if (Firebase.auth.currentUser != null) {
+                                userDetail = UserDetail(
+                                    -1,
+                                    age = 0,
+                                    height = heightValue,
+                                    weight = weightValue,
+                                    birthday = date,
+                                    gender = gender,
+                                    goal = fitnessGoal
+                                )
+                                userDetailViewModel.insertUserDetailIntoCloudDatabase(userDetail)
+                            } else if (currentUserId != null) {
+                                userDetail = UserDetail(
+                                    userId = currentUserId,
+                                    age = 0,
+                                    height = heightValue,
+                                    weight = weightValue,
+                                    birthday = date,
+                                    gender = gender,
+                                    goal = fitnessGoal
+                                )
+                                userDetailViewModel.upsertUserDetail(userDetail)
+                            }
+                            Toast.makeText(context, "User Detail saved!", Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "Please fill in all valid fields", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Input Invalid", Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier.fillMaxWidth().padding(16.dp)
