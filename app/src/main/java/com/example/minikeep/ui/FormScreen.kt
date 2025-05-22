@@ -117,6 +117,16 @@ fun FormScreen(
                     latestUserDetail = detail
                 }
             }
+        } else if (Firebase.auth.currentUser != null) {
+            val newUserDetail = userDetailViewModel.queryUserDetailFromCloudDatabase()
+            height = newUserDetail?.height.toString()
+            weight = newUserDetail?.weight.toString()
+            date = newUserDetail?.birthday.toString()
+        }
+    }
+    LaunchedEffect(userViewModel.loginUser) {
+        if (userViewModel.loginUser.value == null && Firebase.auth.currentUser == null) {
+            navController.navigate("login")
         }
     }
 
@@ -137,7 +147,9 @@ fun FormScreen(
                     onValueChange = { height = it },
                     label = { Text("Height (cm)") },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                    isError = isHeightValid
+
                 )
                 if (isHeightValid) {
                     Text(
@@ -154,7 +166,8 @@ fun FormScreen(
                     onValueChange = { weight = it },
                     label = { Text("Weight (kg)") },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                    isError = isWeightValid
                 )
                 if (isWeightValid) {
                     Text(

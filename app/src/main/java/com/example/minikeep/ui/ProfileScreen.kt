@@ -115,15 +115,15 @@ fun ProfileScreen(
         ) {
             WelcomeSection(userName = "User")
 //            RecommendFitnessPlan()
-            Image(
-                painter = painterResource(id = R.drawable.profile),
-                contentDescription = "Profile banner",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
-            )
+//            Image(
+//                painter = painterResource(id = R.drawable.profile),
+//                contentDescription = "Profile banner",
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(180.dp)
+//                    .clip(RoundedCornerShape(12.dp)),
+//                contentScale = ContentScale.Crop
+//            )
             NoActivitySection(navController = navController)
             Spacer(modifier = Modifier.height(12.dp))
             UserDataCard(
