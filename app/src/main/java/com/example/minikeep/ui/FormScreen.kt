@@ -119,9 +119,17 @@ fun FormScreen(
             }
         } else if (Firebase.auth.currentUser != null) {
             val newUserDetail = userDetailViewModel.queryUserDetailFromCloudDatabase()
-            height = newUserDetail?.height.toString()
-            weight = newUserDetail?.weight.toString()
-            date = newUserDetail?.birthday.toString()
+            if(newUserDetail != null) {
+                height = newUserDetail.height.toString()
+                weight = newUserDetail.weight.toString()
+                date = newUserDetail.birthday
+                gender = newUserDetail.gender
+                fitnessGoal = newUserDetail.goal
+                age = newUserDetail.age
+
+                bmi = calculateBMI(newUserDetail.height, newUserDetail.weight)
+                fat = estimateBodyFatPercentage(newUserDetail.age, newUserDetail.gender, bmi)
+            }
         }
     }
     LaunchedEffect(userViewModel.loginUser) {
