@@ -19,15 +19,15 @@ data class WorkoutPlan(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
 
-    val userId: Int,             // 外键，关联 User 表
+    val userId: Int,
 
-    val content: String,         // 锻炼内容，例如 "Deadlift"
+    val content: String,
 
-    val targetSets: Int,         // 设定组数
+    val targetSets: Int,
 
-    val completedSets: Int       // 实际完成组数
+    val completedSets: Int
 ) {
-    val progress: Float          // 自动计算完成比例
+    val progress: Float
         get() = if (targetSets > 0) {
             (completedSets.toFloat() / targetSets).coerceIn(0f, 1f)
         } else 0f

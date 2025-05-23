@@ -1,6 +1,5 @@
 package com.example.minikeep.ui
 
-
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
@@ -405,7 +404,7 @@ fun CalendarDay(day: Int, hasEvent: Boolean, isToday: Boolean) {
                 if (isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent,
                 shape = CircleShape
             )
-            .clickable { /* 可添加点击事件 */ },
+            .clickable { /* Click here to add more events */ },
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

@@ -75,6 +75,12 @@ import com.example.minikeep.viewmodel.WorkoutPlanViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
+
+/**
+ * Main entry for the Profile screen.
+ * Displays a greeting section, a banner image, workout suggestion area,
+ * user data action buttons, and sign-out functionality.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
@@ -88,6 +94,7 @@ fun ProfileScreen(
     var showDialog by remember { mutableStateOf(false) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
 
+    // Redirect to login screen if user is not authenticated
     LaunchedEffect(Firebase.auth.currentUser) {
         if (userViewModel.loginUser.value == null && Firebase.auth.currentUser == null) {
             navController.navigate("login")
@@ -168,7 +175,9 @@ fun ProfileScreen(
     }
 }
 
-// Welcome area
+/**
+ * Displays a friendly greeting with the user's initial and a motivational message.
+ */
 @Composable
 fun WelcomeSection(userName: String) {
     Row(
@@ -196,7 +205,7 @@ fun WelcomeSection(userName: String) {
 
         Column {
             Text(
-                text = "Hi, $userName!",
+                text = "Keep going! \uD83D\uDC5F",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -210,7 +219,10 @@ fun WelcomeSection(userName: String) {
     }
 }
 
-
+/**
+ * Section that encourages users to explore workout plans.
+ * Includes a "Start Now" button to navigate to the Home screen.
+ */
 @Composable
 fun NoActivitySection(navController: NavController) {
     Column(
@@ -243,6 +255,13 @@ fun NoActivitySection(navController: NavController) {
     }
 }
 
+/**
+ * Card containing user action shortcuts such as:
+ * - Basic Info (navigate to form)
+ * - Plan, Records, Calendar (TODO: define)
+ * - Edit Profile (opens dialog)
+ * - Privacy (opens policy dialog)
+ */
 @Composable
 fun UserDataCard(
     navController: NavController,
@@ -297,6 +316,10 @@ fun UserDataCard(
     }
 }
 
+/**
+ * Dialog showing privacy policy information.
+ * Explains how user data is stored and protected.
+ */
 @Composable
 fun PrivacyDialog(onDismiss: () -> Unit) {
     AlertDialog(
@@ -321,6 +344,10 @@ fun PrivacyDialog(onDismiss: () -> Unit) {
     )
 }
 
+/**
+ * Dialog that allows users to edit their username and password.
+ * Includes form validation and confirmation logic.
+ */
 @Composable
 fun EditProfileDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
@@ -375,6 +402,11 @@ fun EditProfileDialog(onDismiss: () -> Unit) {
     )
 }
 
+
+/**
+ * Reusable component for a circular icon button with a text label underneath.
+ * Used in user action shortcuts.
+ */
 @Composable
 fun IconWithLabel(icon: ImageVector, label: String, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {

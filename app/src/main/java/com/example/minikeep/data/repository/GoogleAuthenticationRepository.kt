@@ -32,14 +32,13 @@ class GoogleAuthenticationRepository(context: Context) {
 
     val googleAccount = GoogleSignIn.getLastSignedInAccount(context)
 //    googleAccount?.let {
-//        val accessToken = it.idToken // 或者 requestServerAuthCode 时换 token
+//        val accessToken = it.idToken
 //    }
 
 
 
     fun logout() {
         googleSignInClient.signOut().addOnCompleteListener {
-            // 已成功退出
             println("GoogleSignOut User signed out")
         }
     }
