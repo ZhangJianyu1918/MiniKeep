@@ -134,10 +134,12 @@ fun TodayWorkoutPlanSection(
             val completed = completedText.toIntOrNull() ?: 0
             val progress = if (sets > 0) (completed.toFloat() / sets).coerceIn(0f, 1f) else 0f
 
-            targetSetsList.add(sets)
-            completedSetsList.add(completed)
-            progressList.add(progress)
-            contentList.add(exercise)
+            if (sets > 0) {
+                targetSetsList.add(sets)
+                completedSetsList.add(completed)
+                progressList.add(progress)
+                contentList.add(exercise)
+            }
 
             Column(
                 modifier = Modifier
@@ -301,16 +303,6 @@ fun TodayWorkoutPlanSection(
                     }) {
                         Text("Save as Template")
                         Spacer(modifier = Modifier.width(16.dp))
-
-                        Button(
-                            onClick = {
-                                Toast.makeText(context, "Template Saved!", Toast.LENGTH_SHORT)
-                                    .show()
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Save as Template")
-                        }
                     }
                 }
             }
