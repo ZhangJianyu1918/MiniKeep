@@ -23,5 +23,7 @@ data class DietPlan(
 
     val food: String,
 
-    val mealType: Int
+    val mealType: Int,
+
+    val isCompleted: Boolean
 )

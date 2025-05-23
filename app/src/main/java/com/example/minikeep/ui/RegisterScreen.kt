@@ -1,6 +1,7 @@
 package com.example.minikeep.ui
 
 import android.app.Application
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.navigation.NavController
 import com.example.minikeep.data.local.entity.User
 import com.example.minikeep.viewmodel.UserViewModel
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.ui.platform.LocalContext
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
@@ -46,7 +48,7 @@ fun RegisterScreen(
             navController.navigate("home")
         }
     }
-
+    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -136,15 +138,18 @@ fun RegisterScreen(
 
                     Button(
                         onClick = {
-                            if (!userViewModel.isValidEmail(email) || !userViewModel.isValidPassword(password)) {
+                            if (!userViewModel.isValidEmail(email) ||
+                                !userViewModel.isValidPassword(password)) {
                                 scope.launch {
                                     snackbarHostState.showSnackbar("Your Input is invalid!")
                                 }
                                 return@Button
                             }
-                            userViewModel.insertUser(
-                            User(email = email, password = password)
-                        )},
+                            userViewModel.insertUser(User(email = email, password = password))
+                            Toast.makeText(context, "You registered a new account " +
+                                    "successfully! You can log in now.", Toast.LENGTH_SHORT).show()
+
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
                         colors = ButtonDefaults.buttonColors(
