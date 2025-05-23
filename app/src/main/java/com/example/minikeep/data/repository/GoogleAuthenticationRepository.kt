@@ -1,7 +1,7 @@
 package com.example.minikeep.data.repository
 
 import android.content.Context
-import com.example.minikeep.data.remote.api.GoogleTokenApi
+//import com.example.minikeep.data.remote.api.GoogleTokenApi
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -22,11 +22,11 @@ class GoogleAuthenticationRepository(context: Context) {
         .requestScopes(Scope(CalendarScopes.CALENDAR))
         .build()
 
-    private val api = Retrofit.Builder()
-        .baseUrl("https://oauth2.googleapis.com/")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-        .create(GoogleTokenApi::class.java)
+//    private val api = Retrofit.Builder()
+//        .baseUrl("https://oauth2.googleapis.com/")
+//        .addConverterFactory(GsonConverterFactory.create())
+//        .build()
+//        .create(GoogleTokenApi::class.java)
 
     val googleSignInClient: GoogleSignInClient = GoogleSignIn.getClient(context, gso)
 

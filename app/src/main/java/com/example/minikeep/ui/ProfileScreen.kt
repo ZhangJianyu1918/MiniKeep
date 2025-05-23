@@ -65,6 +65,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import com.example.minikeep.R
@@ -292,26 +293,29 @@ fun UserDataCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 IconWithLabel(Icons.Default.Edit, "Basic Info", onClick = { navController.navigate("form") })
-                IconWithLabel(Icons.Default.DateRange, "Plan", onClick = { /* TODO */ })
-                IconWithLabel(Icons.Default.List, "Records", onClick = { /* TODO */ })
+//                IconWithLabel(Icons.Default.DateRange, "Plan", onClick = { /* TODO */ })
+                IconWithLabel(Icons.Default.Place, "Map", onClick = {
+                    navController.navigate("map")
+                })
                 IconWithLabel(Icons.Default.DateRange, "Calendar", onClick = {
                     navController.navigate("calendar")
                 })
-            }
-
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 24.dp),
-                horizontalArrangement = Arrangement.Start
-            ) {
-                IconWithLabel(Icons.Default.Edit, "Edit Profile", onClick = showDialog)
-                Spacer(modifier = Modifier.width(24.dp))
                 IconWithLabel(Icons.Default.Settings, "Privacy", onClick = showPrivacy)
             }
+
+
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            Row(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(start = 24.dp),
+//                horizontalArrangement = Arrangement.Start
+//            ) {
+//                IconWithLabel(Icons.Default.Edit, "Edit Profile", onClick = showDialog)
+//                Spacer(modifier = Modifier.width(24.dp))
+//                IconWithLabel(Icons.Default.Settings, "Privacy", onClick = showPrivacy)
+//            }
         }
     }
 }
