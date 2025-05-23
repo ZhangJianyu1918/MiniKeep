@@ -55,6 +55,8 @@ import com.example.minikeep.data.local.entity.WorkoutPlan
 import com.example.minikeep.viewmodel.DietPlanViewModel
 import com.example.minikeep.viewmodel.WorkoutPlanViewModel
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.tasks.await
 
 
 data class ExerciseData(
@@ -443,8 +445,9 @@ fun TodayDietPlanSection(userViewModel: UserViewModel, dietPlanViewModel: DietPl
                             if (googleUser != null) {
                                 val dietPlan = mapOf(
                                     "email" to googleUser.email,
-                                    "type" to meal,
-                                    "food" to inputText,
+                                    "Breakfast" to if (meal == "Breakfast") inputText else mealInputs["Breakfast"],
+                                    "Lunch" to if (meal == "Lunch") inputText else mealInputs["Lunch"],
+                                    "Dinner" to if (meal == "Dinner") inputText else mealInputs["Dinner"],
                                     "isCompleted" to false
                                 )
                                 firestore.collection("diet").document(googleUser.email.toString()).set(
@@ -519,8 +522,9 @@ fun HomeScreen(
     val currentUser = Firebase.auth.currentUser
     var showWorkoutSection by remember { mutableStateOf(false) }
     var showDietSection by remember { mutableStateOf(false) }
-
+    var showAllPlan by remember { mutableStateOf(false) }
     var userDetailState by remember { mutableStateOf<UserDetail?>(null) }
+
     LaunchedEffect(currentUser?.email) {
         userDetailState = userDetailViewModel.queryUserDetailFromCloudDatabase()
     }
@@ -551,8 +555,13 @@ fun HomeScreen(
             GreetingSection(navController = navController)
             PlanCardSection(
                 onWorkoutClick = { showWorkoutSection = !showWorkoutSection },
-                onDietClick = { showDietSection = !showDietSection }
+                onDietClick = { showDietSection = !showDietSection },
+                onAllPlanClick = { showAllPlan = !showAllPlan }
             )
+            AnimatedVisibility(visible = showAllPlan) {
+                allPlanSection(userViewModel, workoutPlanViewModel, dietPlanViewModel)
+            }
+
             AnimatedVisibility(visible = showWorkoutSection) {
                 TodayWorkoutPlanSection(userViewModel, workoutPlanViewModel)
             }
@@ -645,7 +654,8 @@ fun GreetingSection(navController: NavController) {
 @Composable
 fun PlanCardSection(
     onWorkoutClick: () -> Unit,
-    onDietClick: () -> Unit
+    onDietClick: () -> Unit,
+    onAllPlanClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -666,7 +676,7 @@ fun PlanCardSection(
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = {}) {
+            TextButton(onClick = {onAllPlanClick()}) {
                 Text("See all plans")
                 Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null)
             }
@@ -771,6 +781,312 @@ fun CalendarEntryCard(navController: NavController) {
         }
     }
 }
+
+@SuppressLint("StateFlowValueCalledInComposition", "CoroutineCreationDuringComposition")
+@Composable
+fun allPlanSection(
+    userViewModel: UserViewModel,
+    workoutPlanViewModel: WorkoutPlanViewModel,
+    dietPlanViewModel: DietPlanViewModel
+) {
+    val currentUser by userViewModel.loginUser.collectAsState()
+    val googleUser = Firebase.auth.currentUser
+    val firestore = FirebaseFirestore.getInstance()
+    val coroutineScope = rememberCoroutineScope()
+
+    // State to hold Firestore data
+    var dietData by remember { mutableStateOf<Triple<String?, String?, String?>?>(null) } // Breakfast, Lunch, Dinner
+    var workoutData by remember { mutableStateOf<Quadruple<List<Any>?, List<Any>?, List<Any>?, List<Any>?>?>(null) } // completedSets, content, targetSets, process
+    var isLoading by remember { mutableStateOf(false) }
+
+    // Fetch Firestore data if googleUser exists
+    LaunchedEffect(googleUser) {
+        if (googleUser != null) {
+            isLoading = true
+            coroutineScope.launch(Dispatchers.IO) {
+                try {
+                    val workoutPlansSnapshot = firestore.collection("workout")
+                        .document(googleUser.email.toString()).get().await()
+                    val dietPlansSnapshot = firestore.collection("diet")
+                        .document(googleUser.email.toString()).get().await()
+
+                    // Extract diet data
+                    val breakfast = dietPlansSnapshot.getString("Breakfast")
+                    val dinner = dietPlansSnapshot.getString("Dinner")
+                    val lunch = dietPlansSnapshot.getString("Lunch")
+                    dietData = Triple(breakfast, lunch, dinner)
+
+                    // Extract workout data (assuming lists, adjust types as needed)
+                    val completedSetsList = workoutPlansSnapshot.get("completedSets") as? List<Any>
+                    val contentList = workoutPlansSnapshot.get("content") as? List<Any>
+                    val targetSetsList = workoutPlansSnapshot.get("targetSets") as? List<Any>
+                    val processList = workoutPlansSnapshot.get("process") as? List<Any>
+                    workoutData = Quadruple(completedSetsList, contentList, targetSetsList, processList)
+                } catch (e: Exception) {
+
+                } finally {
+                    isLoading = false
+                }
+            }
+        }
+    }
+
+    // Set ViewModel user IDs if currentUser exists
+    if (currentUser != null) {
+        workoutPlanViewModel.setUserId(currentUser!!.id)
+        dietPlanViewModel.setUserId(currentUser!!.id)
+    }
+
+    // Collect ViewModel data
+    val allWorkoutPlans by workoutPlanViewModel.allWorkoutPlans.collectAsState()
+    val allDietPlans by dietPlanViewModel.allDietPlans.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .background(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(16.dp)
+    ) {
+        // Loading indicator for Firestore data
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+        } else {
+            // Display Firestore data if available
+            if (googleUser != null && dietData != null && workoutData != null) {
+                Text(
+                    text = "Diet Plan",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                DietPlanCard(dietData!!)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Workout Plan",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                WorkoutPlanCard(workoutData!!)
+            }
+            // Display ViewModel data if available
+            else if (currentUser != null && (allWorkoutPlans.isNotEmpty() || allDietPlans.isNotEmpty())) {
+                AllPlanSectionViewModelDisplay(
+                    allDietPlans = allDietPlans,
+                    allWorkoutPlans = allWorkoutPlans
+                )
+            } else {
+                // Fallback when no data is available
+                Text(
+                    text = "No plans available. Please log in or create a plan.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+        }
+    }
+}
+
+// Composable for displaying diet plan
+@Composable
+fun DietPlanCard(dietData: Triple<String?, String?, String?>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            dietData.first?.let {
+                Text(text = "Breakfast: $it", style = MaterialTheme.typography.bodyMedium)
+            }
+            dietData.second?.let {
+                Text(text = "Lunch: $it", style = MaterialTheme.typography.bodyMedium)
+            }
+            dietData.third?.let {
+                Text(text = "Dinner: $it", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
+}
+
+// Composable for displaying workout plan
+@Composable
+fun WorkoutPlanCard(workoutData: Quadruple<List<Any>?, List<Any>?, List<Any>?, List<Any>?>) {
+    // Determine the number of cards based on the shortest non-null list length
+    val lengths = listOfNotNull(
+        workoutData.first?.size,
+        workoutData.second?.size,
+        workoutData.third?.size,
+        workoutData.fourth?.size
+    )
+    val minLength = if (lengths.isNotEmpty()) lengths.min() else 0
+
+    if (minLength == 0) {
+        // Display a message if no data is available
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Text(
+                text = "No workout data available",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+        return
+    }
+
+    // Create a card for each index
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        for (index in 0 until minLength) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    workoutData.second?.getOrNull(index)?.let { content ->
+                        Text(
+                            text = "Content: $content",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
+                    workoutData.third?.getOrNull(index)?.let { targetSet ->
+                        Text(
+                            text = "Target Sets: $targetSet",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
+                    workoutData.first?.getOrNull(index)?.let { completedSet ->
+                        Text(
+                            text = "Completed Sets: $completedSet",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
+                    workoutData.fourth?.getOrNull(index)?.let { process ->
+                        // Convert process to percentage with two decimal places
+                        val percentage = when (process) {
+                            is Number -> process.toDouble() * 100
+                            is String -> process.toDoubleOrNull()?.times(100) ?: 0.0
+                            else -> 0.0
+                        }
+                        Text(
+                            text = "Process: ${String.format("%.2f%%", percentage)}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Helper data class for workout data (since Kotlin doesn't have a built-in Quadruple)
+data class Quadruple<out A, out B, out C, out D>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D
+)
+
+@Composable
+fun AllPlanSectionViewModelDisplay(
+    allDietPlans: List<DietPlan>,
+    allWorkoutPlans: List<WorkoutPlan>
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (allDietPlans.isNotEmpty()) {
+            Text(
+                text = "Diet Plan",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            allDietPlans.forEach { plan ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Meal: ${plan.food}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        Text(
+                            text = "Type: ${
+                                when (plan.mealType) {
+                                    0 -> "Breakfast"
+                                    1 -> "Lunch"
+                                    2 -> "Dinner"
+                                    else -> "Unknown (${plan.mealType})"
+                                }
+                            }",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (allWorkoutPlans.isNotEmpty()) {
+            Text(
+                text = "Workout Plan",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            allWorkoutPlans.forEach { plan ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Content: ${plan.content}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        Text(
+                            text = "Target Sets: ${plan.targetSets}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        Text(
+                            text = "Completed Sets: ${plan.completedSets}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        Text(
+                            text = "Progress: ${String.format("%.2f%%", plan.progress * 100)}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 /**
  * Composable for the top app bar including a menu icon and page title.
