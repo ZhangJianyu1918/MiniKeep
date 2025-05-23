@@ -212,26 +212,36 @@ fun TodayWorkoutPlanSection() {
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(6.dp))
-        Button(
-            onClick = {
-                val newExercise = newExerciseInput[currentCategory]?.trim().orEmpty()
-                if (newExercise.isNotBlank()) {
-                    val updatedList = (exerciseOptions[currentCategory] ?: emptyList()) + newExercise
-                    exerciseOptions[currentCategory] = updatedList
-                    newExerciseInput[currentCategory] = ""
-                }
-            },
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            Text("➕ Add")
-        }
-
         if (selectedExercises.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = {
-                Toast.makeText(context, "Template Saved!", Toast.LENGTH_SHORT).show()
-            }) {
-                Text("Save as Template")
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Button(
+                    onClick = {
+                        val newExercise = newExerciseInput[currentCategory]?.trim().orEmpty()
+                        if (newExercise.isNotBlank()) {
+                            val updatedList = (exerciseOptions[currentCategory] ?: emptyList()) + newExercise
+                            exerciseOptions[currentCategory] = updatedList
+                            newExerciseInput[currentCategory] = ""
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Add")
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Button(
+                    onClick = {
+                        Toast.makeText(context, "Template Saved!", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Save as Template")
+                }
             }
         }
     }
