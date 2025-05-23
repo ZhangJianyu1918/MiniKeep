@@ -17,11 +17,11 @@ import androidx.room.PrimaryKey
 )
 data class DietPlan(
     @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,             // 主键
+    val id: Int = 0,
 
-    val userId: Int,             // 外键，关联 User 表
+    val userId: Int,
 
-    val food: String,            // 吃的食物，例如 "Eggs and Toast"
+    val food: String,
 
-    val mealType: Int            // 0: 早餐, 1: 午餐, 2: 晚餐
+    val mealType: Int
 )

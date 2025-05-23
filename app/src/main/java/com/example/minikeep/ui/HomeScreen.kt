@@ -59,6 +59,11 @@ data class ExerciseData(
     val progress: Float = 0f
 )
 
+/**
+ * Section for users to manage today's workout plan.
+ * Allows users to select exercises, input sets and completed sets,
+ * view progress, and save as a workout template.
+ */
 @Composable
 fun TodayWorkoutPlanSection() {
     val context = LocalContext.current
@@ -232,7 +237,10 @@ fun TodayWorkoutPlanSection() {
     }
 }
 
-
+/**
+ * Section for users to manage today's diet plan.
+ * Includes editable entries for breakfast, lunch, and dinner with check-off status.
+ */
 @Composable
 fun TodayDietPlanSection() {
     val context = LocalContext.current
@@ -347,6 +355,11 @@ fun TodayDietPlanSection() {
     }
 }
 
+/**
+ * Main composable for the Home screen.
+ * Displays greeting, quick access to workout and diet plans, and a calendar entry card.
+ * Also handles user authentication redirection.
+ */
 @SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -411,6 +424,10 @@ fun HomeScreen(
     }
 }
 
+/**
+ * Section that displays a time-based greeting and a button to explore nearby gyms.
+ * Includes a banner image for visual engagement.
+ */
 @Composable
 fun GreetingSection(navController: NavController) {
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
@@ -479,6 +496,10 @@ fun GreetingSection(navController: NavController) {
     }
 }
 
+/**
+ * Card section labeled "My Plan" that provides two clickable entries:
+ * one for the workout plan and one for the diet plan.
+ */
 @Composable
 fun PlanCardSection(
     onWorkoutClick: () -> Unit,
@@ -537,7 +558,6 @@ fun PlanCardSection(
             Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null)
         }
 
-        // Diet 行
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -566,6 +586,10 @@ fun PlanCardSection(
     }
 }
 
+/**
+ * Motivational card encouraging users to track fitness habits.
+ * Provides access to the calendar screen.
+ */
 @Composable
 fun CalendarEntryCard(navController: NavController) {
     Card(
@@ -606,45 +630,10 @@ fun CalendarEntryCard(navController: NavController) {
     }
 }
 
-
-@Composable
-fun CheckoutBox(checked: Boolean, onCheckedChange: (Boolean) -> Unit,toastText: String, title: String, description: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        val context = LocalContext.current
-        Checkbox(
-            checked = checked,
-            onCheckedChange = { isChecked ->
-                onCheckedChange(isChecked)
-                if (isChecked) {
-                    Toast.makeText(
-                        context,
-                        toastText,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        )
-        Column(
-            modifier = Modifier.padding(start = 8.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.Black
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
-            )
-        }
-    }
-}
-
+/**
+ * Composable for the top app bar including a menu icon and page title.
+ * Used across screens for consistent navigation.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MiniKeepTopBar(
@@ -671,7 +660,9 @@ fun MiniKeepTopBar(
     )
 }
 
-
+/**
+ * Preview of the HomeScreen composable for use in Android Studio design tools.
+ */
 @Preview
 @Composable
 fun HomeScreenPreview() {

@@ -128,7 +128,6 @@ fun LoginScreen(navController: NavController, drawerState: DrawerState, userView
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 登录卡片
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.extraLarge,

@@ -162,7 +162,7 @@ fun MiniKeepNavigation(
 data class MenuItem(
     val title: String,
     val route: String,
-    val icon: ImageVector? = null // 可选图标，使用 Icons.Default
+    val icon: ImageVector? = null
 )
 
 val menus = listOf(
