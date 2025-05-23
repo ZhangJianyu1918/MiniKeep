@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.ui.unit.sp
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.runtime.collectAsState
+import com.example.minikeep.data.local.entity.DietPlan
 import com.example.minikeep.data.local.entity.WorkoutPlan
 import com.example.minikeep.viewmodel.DietPlanViewModel
 import com.example.minikeep.viewmodel.WorkoutPlanViewModel
@@ -282,13 +283,17 @@ fun TodayWorkoutPlanSection(
  * Includes editable entries for breakfast, lunch, and dinner with check-off status.
  */
 @Composable
-fun TodayDietPlanSection() {
+fun TodayDietPlanSection(userViewModel: UserViewModel, dietPlanViewModel: DietPlanViewModel) {
     val context = LocalContext.current
 
     val meals = listOf("Breakfast", "Lunch", "Dinner")
     val checkedStates = remember { mutableStateMapOf<String, Boolean>() }
     val mealInputs = remember { mutableStateMapOf<String, String>() }
     val isEditing = remember { mutableStateMapOf<String, Boolean>() }
+
+    val currentUser by userViewModel.loginUser.collectAsState()
+    val googleUser = Firebase.auth.currentUser
+    val firestore = FirebaseFirestore.getInstance()
 
     Column(
         modifier = Modifier
@@ -325,6 +330,36 @@ fun TodayDietPlanSection() {
                             onCheckedChange = {
                                 if (inputText.isNotBlank() && !editing) {
                                     checkedStates[meal] = it
+                                    if (googleUser != null) {
+                                        val dietPlan = mapOf(
+                                            "email" to googleUser.email,
+                                            "type" to meal,
+                                            "food" to inputText,
+                                            "isCompleted" to it
+                                        )
+                                        firestore.collection("diet").document(googleUser.email.toString()).set(
+                                            dietPlan
+                                        )
+                                    } else if (currentUser != null) {
+                                        val type: Int = when (meal) {
+                                            "Breakfast" -> {
+                                                0
+                                            }
+                                            "Lunch" -> {
+                                                1
+                                            }
+                                            else -> {
+                                                2
+                                            }
+                                        }
+                                        val localDietPlan = DietPlan(
+                                            userId = currentUser!!.id,
+                                            food = inputText,
+                                            mealType = type,
+                                            isCompleted = it
+                                        )
+                                        dietPlanViewModel.updateDietPlan(localDietPlan)
+                                    }
                                     if (it) {
                                         Toast.makeText(context, "$meal completed!", Toast.LENGTH_SHORT).show()
                                     }
@@ -368,6 +403,36 @@ fun TodayDietPlanSection() {
 
                         Button(onClick = {
                             isEditing[meal] = false
+                            if (googleUser != null) {
+                                val dietPlan = mapOf(
+                                    "email" to googleUser.email,
+                                    "type" to meal,
+                                    "food" to inputText,
+                                    "isCompleted" to false
+                                )
+                                firestore.collection("diet").document(googleUser.email.toString()).set(
+                                    dietPlan
+                                )
+                            } else if (currentUser != null) {
+                                val type: Int = when (meal) {
+                                    "Breakfast" -> {
+                                        0
+                                    }
+                                    "Lunch" -> {
+                                        1
+                                    }
+                                    else -> {
+                                        2
+                                    }
+                                }
+                                val localDietPlan = DietPlan(
+                                    userId = currentUser!!.id,
+                                    food = inputText,
+                                    mealType = type,
+                                    isCompleted = false
+                                )
+                                dietPlanViewModel.addDietPlan(localDietPlan)
+                            }
                         }) {
                             Text("Save")
                         }
@@ -456,7 +521,7 @@ fun HomeScreen(
             }
 
             AnimatedVisibility(visible = showDietSection) {
-                TodayDietPlanSection()
+                TodayDietPlanSection(userViewModel, dietPlanViewModel)
             }
             Spacer(modifier = Modifier.height(12.dp))
             CalendarEntryCard(navController = navController)
