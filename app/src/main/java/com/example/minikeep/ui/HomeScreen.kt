@@ -49,8 +49,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.ui.unit.sp
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.runtime.collectAsState
+import com.example.minikeep.data.local.entity.WorkoutPlan
 import com.example.minikeep.viewmodel.DietPlanViewModel
 import com.example.minikeep.viewmodel.WorkoutPlanViewModel
+import com.google.firebase.firestore.FirebaseFirestore
 
 
 data class ExerciseData(
@@ -65,7 +68,10 @@ data class ExerciseData(
  * view progress, and save as a workout template.
  */
 @Composable
-fun TodayWorkoutPlanSection() {
+fun TodayWorkoutPlanSection(
+    userViewModel: UserViewModel,
+    workoutPlanViewModel: WorkoutPlanViewModel
+) {
     val context = LocalContext.current
     val categories = listOf("Strength", "Cardio", "Flexibility")
     var selectedTab by remember { mutableStateOf(0) }
@@ -81,6 +87,10 @@ fun TodayWorkoutPlanSection() {
     val selectedExercises = remember { mutableStateMapOf<String, ExerciseData>() }
     val setsTextMap = remember { mutableStateMapOf<String, String>() }
     val completedTextMap = remember { mutableStateMapOf<String, String>() }
+
+    val currentUser by userViewModel.loginUser.collectAsState()
+    val googleUser = Firebase.auth.currentUser
+    val firestore = FirebaseFirestore.getInstance()
 
     Column(
         modifier = Modifier
@@ -106,7 +116,10 @@ fun TodayWorkoutPlanSection() {
 
         val currentCategory = categories[selectedTab]
         val currentOptions = exerciseOptions[currentCategory] ?: emptyList()
-
+        val contentList = ArrayList<String>()
+        val targetSetsList = ArrayList<Int>()
+        val completedSetsList = ArrayList<Int>()
+        val progressList = ArrayList<Float>()
         currentOptions.forEach { exercise ->
             val isSelected = selectedExercises.containsKey(exercise)
             val data = selectedExercises[exercise] ?: ExerciseData()
@@ -116,6 +129,11 @@ fun TodayWorkoutPlanSection() {
             val sets = setsText.toIntOrNull() ?: 0
             val completed = completedText.toIntOrNull() ?: 0
             val progress = if (sets > 0) (completed.toFloat() / sets).coerceIn(0f, 1f) else 0f
+
+            targetSetsList.add(sets)
+            completedSetsList.add(completed)
+            progressList.add(progress)
+            contentList.add(exercise)
 
             Column(
                 modifier = Modifier
@@ -229,6 +247,28 @@ fun TodayWorkoutPlanSection() {
         if (selectedExercises.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = {
+                if (googleUser != null) {
+                    val newWorkoutPlan = mapOf(
+                        "email" to googleUser.email,
+                        "content" to contentList,
+                        "targetSets" to targetSetsList,
+                        "completedSets" to completedSetsList,
+                        "process" to progressList
+                    )
+                    firestore.collection("workout").document(googleUser.email.toString()).set(
+                        newWorkoutPlan
+                    )
+                } else if (currentUser != null) {
+                    for (i in targetSetsList.indices) {
+                        val localWorkoutPlan = WorkoutPlan(
+                            userId = currentUser!!.id,
+                            content = contentList[i],
+                            targetSets = targetSetsList[i],
+                            completedSets = completedSetsList[i]
+                        )
+                        workoutPlanViewModel.addWorkoutPlan(localWorkoutPlan)
+                    }
+                }
                 Toast.makeText(context, "Template Saved!", Toast.LENGTH_SHORT).show()
             }) {
                 Text("Save as Template")
@@ -369,7 +409,7 @@ fun HomeScreen(
     userViewModel: UserViewModel,
     userDetailViewModel: UserDetailViewModel,
     dietPlanViewModel: DietPlanViewModel,
-    WorkoutPlanViewModel: WorkoutPlanViewModel
+    workoutPlanViewModel: WorkoutPlanViewModel
 ) {
     val coroutineScope = rememberCoroutineScope()
     var showWorkoutSheet by remember { mutableStateOf(false) }
@@ -412,7 +452,7 @@ fun HomeScreen(
                 onDietClick = { showDietSection = !showDietSection }
             )
             AnimatedVisibility(visible = showWorkoutSection) {
-                TodayWorkoutPlanSection()
+                TodayWorkoutPlanSection(userViewModel, workoutPlanViewModel)
             }
 
             AnimatedVisibility(visible = showDietSection) {
