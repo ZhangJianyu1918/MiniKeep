@@ -82,7 +82,8 @@ fun TodayWorkoutPlanSection(
         "Cardio" to listOf("Running", "Cycling", "Jump Rope"),
         "Flexibility" to listOf("Yoga", "Stretching", "Pilates")
     )
-    val exerciseOptions = remember { mutableStateMapOf<String, List<String>>().apply { putAll(initialOptions) } }
+    val exerciseOptions =
+        remember { mutableStateMapOf<String, List<String>>().apply { putAll(initialOptions) } }
     val newExerciseInput = remember { mutableStateMapOf<String, String>() }
 
     val selectedExercises = remember { mutableStateMapOf<String, ExerciseData>() }
@@ -187,14 +188,23 @@ fun TodayWorkoutPlanSection(
                                 onValueChange = {
                                     setsTextMap[exercise] = it.filter { ch -> ch.isDigit() }
                                     val newSets = it.toIntOrNull() ?: 0
-                                    val currentCompleted = completedTextMap[exercise]?.toIntOrNull() ?: 0
-                                    val newProgress = if (newSets > 0) (currentCompleted.toFloat() / newSets).coerceIn(0f, 1f) else 0f
-                                    selectedExercises[exercise] = data.copy(sets = newSets, progress = newProgress)
+                                    val currentCompleted =
+                                        completedTextMap[exercise]?.toIntOrNull() ?: 0
+                                    val newProgress =
+                                        if (newSets > 0) (currentCompleted.toFloat() / newSets).coerceIn(
+                                            0f,
+                                            1f
+                                        ) else 0f
+                                    selectedExercises[exercise] =
+                                        data.copy(sets = newSets, progress = newProgress)
                                 },
                                 label = { Text("Sets") },
                                 isError = setsText.isEmpty(),
                                 supportingText = {
-                                    if (setsText.isEmpty()) Text("Required", color = MaterialTheme.colorScheme.error)
+                                    if (setsText.isEmpty()) Text(
+                                        "Required",
+                                        color = MaterialTheme.colorScheme.error
+                                    )
                                 },
                                 modifier = Modifier.weight(1f)
                             )
@@ -205,7 +215,11 @@ fun TodayWorkoutPlanSection(
                                     completedTextMap[exercise] = it.filter { ch -> ch.isDigit() }
                                     val currentSets = setsTextMap[exercise]?.toIntOrNull() ?: 0
                                     val newCompleted = it.toIntOrNull() ?: 0
-                                    val newProgress = if (currentSets > 0) (newCompleted.toFloat() / currentSets).coerceIn(0f, 1f) else 0f
+                                    val newProgress =
+                                        if (currentSets > 0) (newCompleted.toFloat() / currentSets).coerceIn(
+                                            0f,
+                                            1f
+                                        ) else 0f
                                     selectedExercises[exercise] = data.copy(progress = newProgress)
                                 },
                                 label = { Text("Completed") },
@@ -216,7 +230,10 @@ fun TodayWorkoutPlanSection(
 
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Progress: ${(progress * 100).toInt()}%")
-                        LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
+                        LinearProgressIndicator(
+                            progress = progress,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
@@ -241,7 +258,8 @@ fun TodayWorkoutPlanSection(
                     onClick = {
                         val newExercise = newExerciseInput[currentCategory]?.trim().orEmpty()
                         if (newExercise.isNotBlank()) {
-                            val updatedList = (exerciseOptions[currentCategory] ?: emptyList()) + newExercise
+                            val updatedList =
+                                (exerciseOptions[currentCategory] ?: emptyList()) + newExercise
                             exerciseOptions[currentCategory] = updatedList
                             newExerciseInput[currentCategory] = ""
                         }
@@ -251,49 +269,52 @@ fun TodayWorkoutPlanSection(
                     Text("Add")
                 }
 
-        if (selectedExercises.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = {
-                if (googleUser != null) {
-                    val newWorkoutPlan = mapOf(
-                        "email" to googleUser.email,
-                        "content" to contentList,
-                        "targetSets" to targetSetsList,
-                        "completedSets" to completedSetsList,
-                        "process" to progressList
-                    )
-                    firestore.collection("workout").document(googleUser.email.toString()).set(
-                        newWorkoutPlan
-                    )
-                } else if (currentUser != null) {
-                    for (i in targetSetsList.indices) {
-                        val localWorkoutPlan = WorkoutPlan(
-                            userId = currentUser!!.id,
-                            content = contentList[i],
-                            targetSets = targetSetsList[i],
-                            completedSets = completedSetsList[i]
-                        )
-                        workoutPlanViewModel.addWorkoutPlan(localWorkoutPlan)
-                    }
-                }
-                Toast.makeText(context, "Template Saved!", Toast.LENGTH_SHORT).show()
-            }) {
-                Text("Save as Template")
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Button(
-                    onClick = {
+                if (selectedExercises.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = {
+                        if (googleUser != null) {
+                            val newWorkoutPlan = mapOf(
+                                "email" to googleUser.email,
+                                "content" to contentList,
+                                "targetSets" to targetSetsList,
+                                "completedSets" to completedSetsList,
+                                "process" to progressList
+                            )
+                            firestore.collection("workout").document(googleUser.email.toString())
+                                .set(
+                                    newWorkoutPlan
+                                )
+                        } else if (currentUser != null) {
+                            for (i in targetSetsList.indices) {
+                                val localWorkoutPlan = WorkoutPlan(
+                                    userId = currentUser!!.id,
+                                    content = contentList[i],
+                                    targetSets = targetSetsList[i],
+                                    completedSets = completedSetsList[i]
+                                )
+                                workoutPlanViewModel.addWorkoutPlan(localWorkoutPlan)
+                            }
+                        }
                         Toast.makeText(context, "Template Saved!", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Save as Template")
+                    }) {
+                        Text("Save as Template")
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Button(
+                            onClick = {
+                                Toast.makeText(context, "Template Saved!", Toast.LENGTH_SHORT)
+                                    .show()
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Save as Template")
+                        }
+                    }
                 }
             }
         }
     }
 }
-
 /**
  * Section for users to manage today's diet plan.
  * Includes editable entries for breakfast, lunch, and dinner with check-off status.
