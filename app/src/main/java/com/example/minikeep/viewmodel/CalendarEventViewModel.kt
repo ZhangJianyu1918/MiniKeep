@@ -209,7 +209,6 @@ class CalendarEventViewModel(application: Application): AndroidViewModel(applica
         currentUser: User?
     ) {
         if (currentUser != null) {
-            // 如果是本地用户，就删除本地数据库中的事件
             deleteCalendarEvent(calendarEvent)
             return
         }
